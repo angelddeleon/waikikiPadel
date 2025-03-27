@@ -126,7 +126,9 @@ function MetodosPago() {
                 body: JSON.stringify({
                     cancha_id: canchaId, // ID de la cancha
                     fecha: fecha, // Fecha de la reserva
-                    horarios: horarios, // Array de horarios
+                    horarios: horarios, // Array de horarios,
+                    monto: montoTotal,
+                    metodoPago: metodoSeleccionado
                 }),
             });
     

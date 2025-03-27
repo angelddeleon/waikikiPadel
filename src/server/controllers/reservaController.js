@@ -7,11 +7,10 @@ import {
 } from "../models/Reserva.js";
 import pool from "../config/db.js";
 
+// Controlador de creación de reserva y pago
 export const crearReserva = async (req, res) => {
-    // Obtener el user_id del token decodificado
-    const user_id = req.user.userId;  // 'userId' es la propiedad que se pasa en el payload del JWT
-
-    const { cancha_id, fecha, horarios } = req.body;
+    const user_id = req.user.userId;  // Obtener el user_id del token decodificado
+    const { cancha_id, fecha, horarios, monto, metodoPago } = req.body;  // Obtenemos los parámetros necesarios
 
     if (!user_id) {
         return res.status(400).json({ message: "No se pudo obtener el ID del usuario" });
@@ -45,15 +44,29 @@ export const crearReserva = async (req, res) => {
             );
 
             // Crear la reserva
-            await connection.query(
+            const [reservaResult] = await connection.query(
                 `INSERT INTO reservaciones (user_id, horario_id, status) 
                  VALUES (?, ?, 'pendiente')`,
                 [user_id, result.insertId]  // Asociamos el horario insertado con la reserva
             );
+
+            // Almacenar el pago
+            const [pagoResult] = await connection.query(
+                `INSERT INTO pagos (user_id, reserva_id, amount, payment_method, payment_proof, payment_status) 
+                 VALUES (?, ?, ?, ?, ?, ?)`,
+                [
+                    user_id,
+                    reservaResult.insertId, 
+                    monto, 
+                    metodoPago, 
+                    null,
+                    "pendiente"
+                ]
+            );
         }
 
         await connection.commit();  // Confirmar la transacción
-        res.status(201).json({ message: "Reserva creada exitosamente" });
+        res.status(201).json({ message: "Reserva y pago creados exitosamente" });
     } catch (error) {
         await connection.rollback();  // Revertir la transacción en caso de error
         console.error("Error al crear la reserva:", error);
@@ -62,6 +75,7 @@ export const crearReserva = async (req, res) => {
         connection.release();  // Liberar la conexión
     }
 };
+
 
 // Obtener todas las reservas
 export const obtenerReservas = async (req, res) => {
