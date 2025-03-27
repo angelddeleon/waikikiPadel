@@ -61,4 +61,22 @@ export const findById = async (id) => {
   const [rows] = await pool.query(query, [id]);
   return rows[0]; // Devuelve el primer usuario
 };
+export const setPerfil = async (email, newValue) => {
+  try {
+      // Consulta para actualizar la columna deseada por email
+      const query = 'UPDATE usuarios SET perfil = ? WHERE email = ?';
+      const [result] = await pool.query(query, [newValue, email]);
+
+      // Verificar si se afectó algún registro
+      if (result.affectedRows > 0) {
+          return { success: true, message: 'Registro actualizado correctamente' };
+      } else {
+          return { success: false, message: 'No se encontró un usuario con ese email' };
+      }
+  } catch (error) {
+      console.error('Error al actualizar el registro:', error);
+      return { success: false, message: 'Error al actualizar el registro' };
+  }
+};
+
 

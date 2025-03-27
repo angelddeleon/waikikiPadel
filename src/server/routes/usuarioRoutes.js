@@ -7,7 +7,8 @@ import {
   login,
   bloquearUsuario,
   verificaToken,
-  logout,  // Importar la nueva función logout
+  logout,
+  uploadImage  // Importar la nueva función logout
 } from '../controllers/usuarioController.js';
 import verifyToken from "../middleware/verifyToken.js";
 
@@ -15,6 +16,7 @@ const router = express.Router();
 
 // Rutas para los usuarios
 router.post('/', crearUsuario); // Registrar usuario
+router.post('/uploadImage', uploadImage); // Registrar usuario
 router.post('/login', login); // Login de usuario
 router.post('/logout', logout); // Nueva ruta para cerrar sesión
 router.get('/', obtenerUsuarios); // Obtener todos los usuarios

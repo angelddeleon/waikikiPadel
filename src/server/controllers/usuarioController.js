@@ -4,13 +4,53 @@ import {
   getUsuarios,
   deleteUsuario,
   toggleBlockUsuario,
-  findById
+  findById,
+  setPerfil
 } from '../models/Usuario.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import fs from 'fs';
+import multer from 'multer';
+import path from 'path';
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+      const uploadPath = '../uploads/';
+      fs.access(uploadPath, fs.constants.W_OK, (err) => {
+          if (err) {
+              console.error('No se puede escribir en la carpeta:', err);
+              return cb(new Error('Error al escribir en la carpeta destino.'));
+          }
+          cb(null, uploadPath);
+      });
+  },
+  filename: (req, file, cb) => {
+      cb(null, file.originalname); // Conserva el nombre original
+  },
+});
+
+const upload = multer({ storage });
+
+export const uploadImage = (req, res) => {
+  return new Promise((resolve, reject) => {
+      upload.single('image')(req, res, (err) => {
+          if (err) {
+              console.error('Error al subir la imagen:', err);
+              return reject(new Error('Error al subir la imagen'));
+          }
+          if (!req.body) {
+              return reject(new Error('No se proporcionó ninguna imagen'));
+          }
+           // Usa el nombre original en tu lógica
+          resolve(req.body.image); // Retorna la ruta del archivo
+      });
+  });
+};
+
+
 
 export const crearUsuario = async (req, res) => {
-  const { nombre, email, telefono, password, codigoPais, role = 'usuario' } = req.body;
+  const { nombre, email, telefono, password, codigoPais,filname, role = 'usuario' } = req.body;
 
   if (!password) {
     return res.status(400).json({ error: "La contraseña es obligatoria" });
@@ -19,7 +59,7 @@ export const crearUsuario = async (req, res) => {
   try {
     // Crear el nuevo usuario en la base de datos
     const result = await createUsuario({ nombre, email, telefono, password, codigoPais, role });
-
+    setPerfil(email,filname );
     // Generar el token JWT
     const token = jwt.sign(
       { userId: result.id, role: result.role }, // Payload del token

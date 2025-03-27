@@ -9,6 +9,7 @@ function Registrarse() {
     const [countries, setCountries] = useState([]);
     const [selectedCountry, setSelectedCountry] = useState(null);
     const [profileImage, setProfileImage] = useState(null);
+    const [file, setProfile] = useState(null);
     const [errors, setErrors] = useState({});
     const [nombre, setNombre] = useState("");
     const [telefono, setTelefono] = useState("");
@@ -21,6 +22,7 @@ function Registrarse() {
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
+                setProfile(file)
                 setProfileImage(reader.result);
             };
             reader.readAsDataURL(file);
@@ -95,12 +97,16 @@ function Registrarse() {
                 email,
                 telefono,
                 password, // Cambié 'contraseña' a 'password'
-                codigoPais: selectedCountry.value, // Enviar el código del país
+                codigoPais: selectedCountry.value,
+                filname:file.name // Enviar el código del país
             };
+            console.log(data);
+            
 
-            console.log(data); // Verifica que los datos sean correctos
+             // Verifica que los datos sean correctos
 
             try {
+                                
                 const response = await fetch("http://localhost:3000/api/usuarios", {
                     method: "POST",
                     headers: {
@@ -108,6 +114,17 @@ function Registrarse() {
                     },
                     body: JSON.stringify(data), // Convierte el objeto a JSON
                 });
+                if(file){
+                    const formData = new FormData();
+                    formData.append("image", file);
+                    formData.append("email", email); // "image" debe coincidir con el nombre del campo esperado en el backend
+                
+                     fetch("http://localhost:3000/api/usuarios/uploadImage", {
+                        method: "POST",
+                        body: formData, // Se envía el archivo correctamente como FormData
+                    });
+                }
+
 
                 if (!response.ok) {
                     const errorData = await response.json();
