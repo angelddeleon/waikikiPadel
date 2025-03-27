@@ -40,6 +40,7 @@ CREATE TABLE reservaciones (
     user_id INT NOT NULL,
     horario_id INT NOT NULL, 
     status ENUM('pendiente', 'confirmada', 'cancelada', 'terminada') DEFAULT 'pendiente',
+    comprobanteImage VARCHAR(255),
     FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE,
     FOREIGN KEY (horario_id) REFERENCES horarios(id) ON DELETE CASCADE
 );

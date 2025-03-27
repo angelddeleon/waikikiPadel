@@ -15,6 +15,10 @@ import pagoRoutes from "./routes/pagoRoutes.js";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+
+
+const __dirname = path.dirname(new URL(import.meta.url).pathname);  // Esto es necesario porque usas ES modules
+
 // Verificar existencia de la carpeta "uploads"
 const uploadPath = '../uploads/usuarios/';
 if (!fs.existsSync(uploadPath)) {
@@ -45,6 +49,8 @@ app.post('/upload', upload.single('image'), (req, res) => {
 app.use(express.json()); // Analiza solicitudes JSON
 app.use(cookieParser()); // Manejo de cookies
 
+
+
 // Configuración de CORS
 app.use(cors({
     origin: "http://localhost:5173", // Cambiar según tu frontend
@@ -52,6 +58,8 @@ app.use(cors({
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
 }));
+
+app.use('/uploads/usuarios', express.static(uploadPath));
 
 // Rutas de la API
 app.use("/api/usuarios", usuarioRoutes);

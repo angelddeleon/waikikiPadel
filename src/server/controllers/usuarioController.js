@@ -231,12 +231,17 @@ export const obtenerPerfil = async (req, res) => {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
+    // Si existe la imagen del perfil, asigna la URL completa
+    const imageUrl = usuario.profileImage 
+      ? `http://localhost:3000/uploads/usuarios/${usuario.profileImage}` 
+      : null;
+
     // Excluir la contraseña antes de enviar la respuesta
     const { password, ...perfil } = usuario;
 
-    res.json(perfil);
+    // Agregar la URL de la imagen al perfil
+    res.json({ ...perfil, imageUrl });
   } catch (error) {
     res.status(500).json({ error: 'Hubo un error al obtener el perfil del usuario' });
   }
 };
- 
