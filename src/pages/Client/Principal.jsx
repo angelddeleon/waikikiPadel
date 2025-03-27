@@ -98,6 +98,9 @@ function Principal() {
         );
     }
 
+    const numeroTelefono = "58424-4520697";
+    const mensaje = "Hola, 1. Me interesa hacer una reserva en su cancha personalmente. 2.He tenido un error al reservar la cancha ";
+
     return (
         <LayoutClient>
             <div className="overflow-x-hidden">
@@ -136,7 +139,6 @@ function Principal() {
 
                 {/* Canchas disponibles */}
                 <div className="flex flex-col w-full ">
-                    <h1 className="text-2xl md:text-3xl my-4 mx-4 font-bold text-blue-950">Canchas Disponibles</h1>
 
                     {/* Mostrar spinner o error */}
                     {loading ? (
@@ -160,6 +162,25 @@ function Principal() {
                         </div>
                     )}
                 </div>
+
+                {/* Botón de WhatsApp */}
+                <div className="fixed bottom-5 right-5">
+
+
+                <a
+                    href={`https://wa.me/${numeroTelefono}?text=${encodeURIComponent(mensaje)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center p-4 bg-green-500 rounded-full shadow-lg"
+                >
+                    <img
+                    src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+                    alt="WhatsApp"
+                    className="w-12 h-12"
+                    />
+                </a>
+                </div>
+
             </div>
         </LayoutClient>
     );

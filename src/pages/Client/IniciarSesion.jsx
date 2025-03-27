@@ -1,12 +1,13 @@
-import React, { useState } from "react";
 import { Link, useNavigate } from "react-router"; // Cambié 'react-router' a 'react-router-dom'
 import LayoutRegistrarse from "../../layout/LayoutRegistrarse";
 import logo from '../../assets/logo1.png';
+import { useState } from "react";
 
 function IniciarSesion() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);  // Estado de carga
   const navigate = useNavigate();
 
   const validateForm = () => {
@@ -32,6 +33,7 @@ function IniciarSesion() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);  // Inicia el loading
 
     if (validateForm()) {
       try {
@@ -75,8 +77,11 @@ function IniciarSesion() {
       } catch (error) {
         console.error("Error:", error);
         setErrors({ submit: error.message });
+      } finally {
+        setIsLoading(false);  // Detiene el loading
       }
     } else {
+      setIsLoading(false);  // Detiene el loading en caso de error de validación
       console.log("Formulario inválido. Corrige los errores.");
     }
   };
@@ -135,8 +140,12 @@ function IniciarSesion() {
           </Link>
 
           {/* Botón de Iniciar Sesión */}
-          <button type="submit" className="rounded-lg bg-blue-600 py-2 text-sm font-bold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer">
-            Iniciar Sesión
+          <button
+            type="submit"
+            className="rounded-lg bg-blue-600 py-2 text-sm font-bold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+            disabled={isLoading} // Deshabilitar el botón mientras se carga
+          >
+            {isLoading ? "Cargando..." : "Iniciar Sesión"} {/* Muestra el texto 'Cargando...' cuando está en proceso */}
           </button>
 
           {/* Mostrar errores de inicio de sesión */}

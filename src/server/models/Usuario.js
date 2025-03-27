@@ -64,7 +64,7 @@ export const findById = async (id) => {
 export const setPerfil = async (email, newValue) => {
   try {
       // Consulta para actualizar la columna deseada por email
-      const query = 'UPDATE usuarios SET profileImage = ? WHERE email = ?';
+      const query = 'UPDATE usuarios SET profile = ? WHERE email = ?';
       const [result] = await pool.query(query, [newValue, email]);
 
       // Verificar si se afectó algún registro

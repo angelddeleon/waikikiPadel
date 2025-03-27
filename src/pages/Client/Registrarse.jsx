@@ -15,6 +15,7 @@ function Registrarse() {
     const [telefono, setTelefono] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState(""); // Cambié 'contraseña' a 'password'
+    const [isLoading, setIsLoading] = useState(false); // Estado de carga
     const navigate = useNavigate(); // Para redirigir al usuario
 
     const handleImageChange = (event) => {
@@ -90,6 +91,7 @@ function Registrarse() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsLoading(true);  // Inicia el loading
     
         if (validateForm()) {
             const data = {
@@ -122,7 +124,7 @@ function Registrarse() {
                     formData.append("email", email);
                     
                     // Subir la imagen solo si un archivo ha sido seleccionado
-                    fetch("http://localhost:3000/api/usuarios/uploadImage", {
+                    await fetch("http://localhost:3000/api/usuarios/uploadImage", {
                         method: "POST",
                         body: formData,
                     });
@@ -140,8 +142,11 @@ function Registrarse() {
             } catch (error) {
                 console.error("Error:", error);
                 setErrors({ submit: error.message });
+            } finally {
+                setIsLoading(false);  // Detiene el loading
             }
         } else {
+            setIsLoading(false);  // Detiene el loading en caso de error
             console.log("Formulario inválido. Corrige los errores.");
         }
     };
@@ -258,8 +263,9 @@ function Registrarse() {
                         <button
                             type="submit"
                             className="rounded-lg bg-blue-600 py-2 text-sm font-bold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer w-full"
+                            disabled={isLoading} // Deshabilitar el botón mientras se carga
                         >
-                            Registrarse
+                            {isLoading ? "Cargando..." : "Registrarse"} {/* Mostrar texto de carga */}
                         </button>
                     </div>
                 </form>
