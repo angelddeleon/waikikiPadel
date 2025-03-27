@@ -7,10 +7,49 @@ import {
 } from "../models/Reserva.js";
 import pool from "../config/db.js";
 
+
+import fs from 'fs';
+import multer from 'multer';
+import path from 'path';
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+      const uploadPath = '../uploads/comprobante/';
+      fs.access(uploadPath, fs.constants.W_OK, (err) => {
+          if (err) {
+              console.error('No se puede escribir en la carpeta:', err);
+              return cb(new Error('Error al escribir en la carpeta destino.'));
+          }
+          cb(null, uploadPath);
+      });
+  },
+  filename: (req, file, cb) => {
+      cb(null, file.originalname); // Conserva el nombre original
+  },
+});
+
+const upload = multer({ storage });
+
+export const uploadImage = (req, res) => {
+  return new Promise((resolve, reject) => {
+      upload.single('image')(req, res, (err) => {
+          if (err) {
+              console.error('Error al subir la imagen:', err);
+              return reject(new Error('Error al subir la imagen'));
+          }
+          if (!req.body) {
+              return reject(new Error('No se proporcionó ninguna imagen'));
+          }
+           // Usa el nombre original en tu lógica
+          resolve(req.body.image); // Retorna la ruta del archivo
+      });
+  });
+};
+
 // Controlador de creación de reserva y pago
 export const crearReserva = async (req, res) => {
     const user_id = req.user.userId;  // Obtener el user_id del token decodificado
-    const { cancha_id, fecha, horarios, monto, metodoPago } = req.body;  // Obtenemos los parámetros necesarios
+    const { cancha_id, fecha, horarios, monto, metodoPago, nombreImg } = req.body;  // Obtenemos los parámetros necesarios
 
     if (!user_id) {
         return res.status(400).json({ message: "No se pudo obtener el ID del usuario" });
@@ -59,7 +98,7 @@ export const crearReserva = async (req, res) => {
                     reservaResult.insertId, 
                     monto, 
                     metodoPago, 
-                    null,
+                    nombreImg,
                     "pendiente"
                 ]
             );
