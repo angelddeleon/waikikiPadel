@@ -139,6 +139,8 @@ function Principal() {
 
                 {/* Canchas disponibles */}
                 <div className="flex flex-col w-full ">
+                    <h1 className="text-3xl font-bold text-blue-950 px-2 my-4">Canchas Disponibles</h1>
+
 
                     {/* Mostrar spinner o error */}
                     {loading ? (
