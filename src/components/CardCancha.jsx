@@ -23,7 +23,7 @@ function CardCancha({ id, name, image, price_per_hour, horarios }) {
             </Link>
 
             {/* Mostrar los horarios disponibles */}
-            <div className="px-2">
+            <div className="py-4 px-2">
                 <div className="flex overflow-x-auto whitespace-nowrap horarios-container pb-1 max-w-full">
                     {horarios.map((horario, index) => (
                         <Horario

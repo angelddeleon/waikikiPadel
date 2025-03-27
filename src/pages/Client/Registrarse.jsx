@@ -90,52 +90,53 @@ function Registrarse() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
+    
         if (validateForm()) {
             const data = {
                 nombre,
                 email,
                 telefono,
-                password, // Cambié 'contraseña' a 'password'
+                password, 
                 codigoPais: selectedCountry.value,
-                filname:file.name // Enviar el código del país
             };
+    
+            // Solo incluir el nombre del archivo si el archivo ha sido seleccionado
+            if (file) {
+                data.filname = file.name;
+            }
+    
             console.log(data);
-            
-
-             // Verifica que los datos sean correctos
-
+    
             try {
-                                
                 const response = await fetch("http://localhost:3000/api/usuarios", {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json", // Especifica el tipo de contenido
+                        "Content-Type": "application/json",
                     },
-                    body: JSON.stringify(data), // Convierte el objeto a JSON
+                    body: JSON.stringify(data),
                 });
-                if(file){
+    
+                if (file) {
                     const formData = new FormData();
                     formData.append("image", file);
-                    formData.append("email", email); // "image" debe coincidir con el nombre del campo esperado en el backend
-                
-                     fetch("http://localhost:3000/api/usuarios/uploadImage", {
+                    formData.append("email", email);
+                    
+                    // Subir la imagen solo si un archivo ha sido seleccionado
+                    fetch("http://localhost:3000/api/usuarios/uploadImage", {
                         method: "POST",
-                        body: formData, // Se envía el archivo correctamente como FormData
+                        body: formData,
                     });
                 }
-
-
+    
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.error || "Error al registrar el usuario");
                 }
-
+    
                 const result = await response.json();
                 console.log("Usuario registrado:", result);
-
-                // Redirigir al usuario a la página principal
                 navigate("/iniciarsesion");
+    
             } catch (error) {
                 console.error("Error:", error);
                 setErrors({ submit: error.message });

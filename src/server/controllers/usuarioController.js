@@ -15,7 +15,7 @@ import path from 'path';
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-      const uploadPath = '../uploads/';
+      const uploadPath = '../uploads/usuarios/';
       fs.access(uploadPath, fs.constants.W_OK, (err) => {
           if (err) {
               console.error('No se puede escribir en la carpeta:', err);

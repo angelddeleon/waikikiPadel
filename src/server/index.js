@@ -16,7 +16,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Verificar existencia de la carpeta "uploads"
-const uploadPath = '../uploads/';
+const uploadPath = '../uploads/usuarios/';
 if (!fs.existsSync(uploadPath)) {
     fs.mkdirSync(uploadPath); // Crear la carpeta si no existe
 }
