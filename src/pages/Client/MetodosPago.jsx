@@ -15,7 +15,9 @@ function MetodosPago() {
     const [cancha, setCancha] = useState(null);
     const [metodoSeleccionado, setMetodoSeleccionado] = useState(null);
     const [imagenPagoMovil, setImagenPagoMovil] = useState(null);
+
     const [imagenZelle, setImagenZelle] = useState(null);
+    const [File, setFile] = useState(null);
     const [error, setError] = useState("");
     const navigate = useNavigate();
 
@@ -83,7 +85,9 @@ function MetodosPago() {
 
     const handleFileChange = (event, setImagen, otroSetImagen) => {
         const file = event.target.files[0];
+
         if (file) {
+            setFile( event.target.files[0])
             const reader = new FileReader();
             reader.onloadend = () => {
                 setImagen(reader.result);
@@ -128,9 +132,21 @@ function MetodosPago() {
                     fecha: fecha, // Fecha de la reserva
                     horarios: horarios, // Array de horarios,
                     monto: montoTotal,
-                    metodoPago: metodoSeleccionado
+                    metodoPago: metodoSeleccionado,
+                    nombreImg:File?File.name:null
                 }),
             });
+            if (File) {
+                const formData = new FormData();
+                    formData.append("image", File);
+                    
+                const reservaResponse2 = await fetch('http://localhost:3000/api/reservas/ImageCom', {
+                    method: 'POST',
+                    body: formData
+                });
+
+            }
+
     
             const reservaData = await reservaResponse.json();
     
