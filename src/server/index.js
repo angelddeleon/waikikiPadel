@@ -53,7 +53,7 @@ app.use(cookieParser()); // Manejo de cookies
 
 // Configuración de CORS
 app.use(cors({
-    origin: "http://localhost:5173", // Cambiar según tu frontend
+        origin: ["http://localhost:5173", "http://127.0.0.1:5000"], // Cambiar según tu frontend
     credentials: true, // Permitir cookies
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],

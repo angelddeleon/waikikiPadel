@@ -21,7 +21,18 @@ export const crearPago = async (req, res) => {
 export const obtenerPagos = async (req, res) => {
     try {
         const pagos = await getPagos();
-        res.status(200).json(pagos);
+
+        // Mapear los pagos para incluir la URL del comprobante de pago
+        const pagosConUrl = pagos.map(pago => {
+            return {
+                ...pago,
+                paymentProof: pago.paymentProof 
+                    ? `http://localhost:3000/uploads/comprobante/${pago.paymentProof}` 
+                    : null // Asignar null si no hay comprobante
+            };
+        });
+
+        res.status(200).json(pagosConUrl);
     } catch (error) {
         res.status(500).json({ message: "Error al obtener los pagos", error });
     }
