@@ -19,8 +19,15 @@ const PORT = process.env.PORT || 3000;
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);  // Esto es necesario porque usas ES modules
 
+
 // Verificar existencia de la carpeta "uploads"
 const uploadPath = '../uploads/usuarios/';
+if (!fs.existsSync(uploadPath)) {
+    fs.mkdirSync(uploadPath); // Crear la carpeta si no existe
+}
+
+// Verificar existencia de la carpeta "uploads"
+const uploadPath2 = '../uploads/comprobante/';
 if (!fs.existsSync(uploadPath)) {
     fs.mkdirSync(uploadPath); // Crear la carpeta si no existe
 }
@@ -60,6 +67,10 @@ app.use(cors({
 }));
 
 app.use('/uploads/usuarios', express.static(uploadPath));
+app.use('/uploads/comprobante', express.static(path.join(uploadPath2)));
+
+console.log(path.join(__dirname, 'uploads/comprobante'));
+
 
 // Rutas de la API
 app.use("/api/usuarios", usuarioRoutes);
