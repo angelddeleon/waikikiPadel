@@ -62,7 +62,7 @@ export const crearUsuario = async (req, res) => {
 
     // Crear el nuevo usuario en la base de datos
     const result = await createUsuario({ nombre, email, telefono, password, codigoPais, role });
-    setPerfil(email,filname );
+
     // Generar el token JWT
     const token = jwt.sign(
       { userId: result.id, role: result.role }, // Payload del token

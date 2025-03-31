@@ -15,6 +15,7 @@ CREATE TABLE usuarios (
     perfil VARCHAR(255)
 );
 
+
 -- Tabla de Canchas
 CREATE TABLE canchas (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -34,28 +35,65 @@ CREATE TABLE horarios (
     FOREIGN KEY (cancha_id) REFERENCES canchas(id) ON DELETE CASCADE
 );
 
--- Tabla de Reservaciones
-CREATE TABLE reservaciones (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    horario_id INT NOT NULL, 
-    status ENUM('pendiente', 'confirmada', 'cancelada', 'terminada') DEFAULT 'pendiente',
-    FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE,
-    FOREIGN KEY (horario_id) REFERENCES horarios(id) ON DELETE CASCADE
-);
-
--- Tabla de Pagos
+-- Tabla de Pagos (actualizada)
 CREATE TABLE pagos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    reserva_id INT NOT NULL,
     amount DECIMAL(10, 2) NOT NULL,
     payment_method ENUM('efectivo', 'pago movil', 'zelle', 'punto de venta') NOT NULL,
     payment_proof VARCHAR(255),
     payment_status ENUM('pendiente', 'completado', 'rechazado') DEFAULT 'pendiente',
+    payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabla de Reservaciones (actualizada)
+CREATE TABLE reservaciones (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    horario_id INT NOT NULL,
+    pago_id INT,
+    status ENUM('pendiente', 'confirmada', 'cancelada', 'terminada') DEFAULT 'pendiente',
     FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE,
-    FOREIGN KEY (reserva_id) REFERENCES reservaciones(id) ON DELETE CASCADE
+    FOREIGN KEY (horario_id) REFERENCES horarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (pago_id) REFERENCES pagos(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE clases (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    horario_id INT NOT NULL,
+    status ENUM('pendiente', 'realizada', 'cancelada') DEFAULT 'pendiente',
+    FOREIGN KEY (horario_id) REFERENCES horarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE tasa (
+    id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    monto DECIMAL(10, 2) NOT NULL COMMENT 'Valor de la tasa con 2 decimales',
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha de última actualización',
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT 'Tabla de tasas aplicables';
+
+INSERT INTO usuarios (
+    nombre, 
+    email, 
+    telefono, 
+    password, 
+    codigoPais, 
+    role, 
+    isBlocked, 
+    perfil
+) VALUES (
+    'Administrador', 
+    'admin@admin.com', 
+    '12345678910', 
+    'scrypt:32768:8:1$AspUy3lyrVrHDT66$a1aa3cf4b4ed3797bd8bfcd8881b1db7bb0d934004d57b0bfa10eb4c84d261fc62185eb93771b7e1aa2c20a43849a39215592a43b9e6ab64ca284d253fc7cf4b',  -- Reemplazar con hash real
+    '+58', 
+    'admin', 
+    FALSE, 
+    null
 );
+
+INSERT INTO tasa (monto) VALUES (70.00);
 
 -- Insertar un solo registro
 INSERT INTO canchas (name, image, price_per_hour)

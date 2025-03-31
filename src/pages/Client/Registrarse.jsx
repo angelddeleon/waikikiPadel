@@ -1,15 +1,13 @@
 import { Link, useNavigate } from "react-router"; // Cambié la importación a react-router-dom
 import LayoutRegistrarse from "../../layout/LayoutRegistrarse";
 import logo from "../../../public/Logo-Waikiki-NEGRO.png";
-import defaultUser from '../../assets/defaultUser.jpg';
+
 import { useState, useEffect } from "react";
 import Select from "react-select";
 
 function Registrarse() {
     const [countries, setCountries] = useState([]);
     const [selectedCountry, setSelectedCountry] = useState(null);
-    const [profileImage, setProfileImage] = useState(null);
-    const [file, setProfile] = useState(null);
     const [errors, setErrors] = useState({});
     const [nombre, setNombre] = useState("");
     const [telefono, setTelefono] = useState("");
@@ -17,18 +15,6 @@ function Registrarse() {
     const [password, setPassword] = useState(""); // Cambié 'contraseña' a 'password'
     const [isLoading, setIsLoading] = useState(false); // Estado de carga
     const navigate = useNavigate(); // Para redirigir al usuario
-
-    const handleImageChange = (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setProfile(file)
-                setProfileImage(reader.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
 
     useEffect(() => {
         fetch("https://restcountries.com/v3.1/all")
@@ -109,11 +95,6 @@ function Registrarse() {
                 codigoPais: selectedCountry.value,
             };
     
-            // Solo incluir el nombre del archivo si el archivo ha sido seleccionado
-            if (file) {
-                data.filname = file.name;
-            }
-    
             console.log(data);
     
             try {
@@ -125,17 +106,6 @@ function Registrarse() {
                     body: JSON.stringify(data),
                 });
     
-                if (file) {
-                    const formData = new FormData();
-                    formData.append("image", file);
-                    formData.append("email", email);
-                    
-                    // Subir la imagen solo si un archivo ha sido seleccionado
-                    await fetch("http://localhost:3000/api/usuarios/uploadImage", {
-                        method: "POST",
-                        body: formData,
-                    });
-                }
     
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -161,50 +131,7 @@ function Registrarse() {
     return (
         <LayoutRegistrarse>
             <div className="min-h-screen flex flex-col justify-center items-center">
-                <div className="flex flex-col items-center">
-                    <img className="w-20 mb-4" src={logo} alt="logo" />
-                    <div className="mb-4 rounded-full w-20 h-20 flex justify-center items-center overflow-hidden relative group">
-                        <input
-                            type="file"
-                            id="profileImageInput"
-                            className="hidden"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                        />
-                        <label htmlFor="profileImageInput" className="cursor-pointer w-full h-full">
-                            {profileImage ? (
-                                <img
-                                    src={profileImage}
-                                    alt="Foto de perfil"
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <img
-                                    src={defaultUser}
-                                    alt="Foto de perfil predeterminada"
-                                    className="w-full h-full object-cover"
-                                />
-                            )}
-                            <div className="absolute inset-0 bg-black/50 flex justify-center items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-6 w-6 text-white"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                                    />
-                                </svg>
-                            </div>
-                        </label>
-                    </div>
-                </div>
-
+                <img class="h-25" src={logo} alt=""  />
                 <form onSubmit={handleSubmit} className="flex w-80 flex-col max-h-[80vh] overflow-y-auto">
                     <div className="mb-2">
                         <label className="block text-sm font-medium text-gray-700">Nombre</label>

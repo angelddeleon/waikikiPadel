@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router"; // Cambié 'react-router' a 'react-router-dom'
 import LayoutRegistrarse from "../../layout/LayoutRegistrarse";
-import logo from '../../assets/logo1.png';
+import logo from "../../../public/Logo-Waikiki-NEGRO.png";
 import { useState } from "react";
 
 function IniciarSesion() {
@@ -89,7 +89,7 @@ function IniciarSesion() {
   return (
     <LayoutRegistrarse>
       <div className="min-h-screen flex flex-col justify-center items-center p-4">
-        <img className="w-3xs mb-20" src={logo} alt="logo" />
+        <img className="w-3xs mb-5" src={logo} alt="logo" />
 
         <form onSubmit={handleSubmit} className="flex w-80 flex-col">
           {/* Campo de Email */}

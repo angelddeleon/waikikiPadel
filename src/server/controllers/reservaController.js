@@ -46,10 +46,9 @@ export const uploadImage = (req, res) => {
   });
 };
 
-// Controlador de creación de reserva y pago
 export const crearReserva = async (req, res) => {
-    const user_id = req.user.userId;  // Obtener el user_id del token decodificado
-    const { cancha_id, fecha, horarios, monto, metodoPago, nombreImg } = req.body;  // Obtenemos los parámetros necesarios
+    const user_id = req.user.userId;
+    const { cancha_id, fecha, horarios, monto, metodoPago, nombreImg } = req.body;
 
     if (!user_id) {
         return res.status(400).json({ message: "No se pudo obtener el ID del usuario" });
@@ -57,13 +56,22 @@ export const crearReserva = async (req, res) => {
 
     const connection = await pool.getConnection();
     try {
-        await connection.beginTransaction();  // Iniciar transacción
+        await connection.beginTransaction();
 
-        // Verificar si los horarios están disponibles
+        // First create the payment
+        const [pagoResult] = await connection.query(
+            `INSERT INTO pagos 
+             (user_id, amount, payment_method, payment_proof, payment_status) 
+             VALUES (?, ?, ?, ?, ?)`,
+            [user_id, monto, metodoPago, nombreImg, "pendiente"]
+        );
+        const pago_id = pagoResult.insertId;
+
+        // Then create each reservation with the same payment ID
         for (const horario of horarios) {
             const { start_time, end_time } = horario;
 
-            // Verificar si el horario ya está ocupado
+            // Verify if the schedule is available
             const [horarioExistente] = await connection.query(
                 `SELECT id FROM horarios 
                  WHERE cancha_id = ? AND date = ? AND start_time = ? AND end_time = ?`,
@@ -71,47 +79,36 @@ export const crearReserva = async (req, res) => {
             );
 
             if (horarioExistente.length > 0) {
-                await connection.rollback(); // Revertir la transacción si el horario ya está ocupado
+                await connection.rollback();
                 return res.status(400).json({ message: "El horario ya está ocupado" });
             }
 
-            // Crear el horario
-            const [result] = await connection.query(
+            // Create the schedule
+            const [horarioResult] = await connection.query(
                 `INSERT INTO horarios (cancha_id, date, start_time, end_time, estado) 
                  VALUES (?, ?, ?, ?, 'ocupado')`,
                 [cancha_id, fecha, start_time, end_time]
             );
 
-            // Crear la reserva
-            const [reservaResult] = await connection.query(
-                `INSERT INTO reservaciones (user_id, horario_id, status) 
-                 VALUES (?, ?, 'pendiente')`,
-                [user_id, result.insertId]  // Asociamos el horario insertado con la reserva
-            );
-
-            // Almacenar el pago
-            const [pagoResult] = await connection.query(
-                `INSERT INTO pagos (user_id, reserva_id, amount, payment_method, payment_proof, payment_status) 
-                 VALUES (?, ?, ?, ?, ?, ?)`,
-                [
-                    user_id,
-                    reservaResult.insertId, 
-                    monto, 
-                    metodoPago, 
-                    nombreImg,
-                    "pendiente"
-                ]
+            // Create the reservation with the payment ID
+            await connection.query(
+                `INSERT INTO reservaciones (user_id, horario_id, pago_id, status) 
+                 VALUES (?, ?, ?, 'pendiente')`,
+                [user_id, horarioResult.insertId, pago_id]
             );
         }
 
-        await connection.commit();  // Confirmar la transacción
-        res.status(201).json({ message: "Reserva y pago creados exitosamente" });
+        await connection.commit();
+        res.status(201).json({ 
+            message: "Reserva y pago creados exitosamente",
+            pago_id: pago_id
+        });
     } catch (error) {
-        await connection.rollback();  // Revertir la transacción en caso de error
+        await connection.rollback();
         console.error("Error al crear la reserva:", error);
         res.status(500).json({ message: "Error al crear la reserva", error });
     } finally {
-        connection.release();  // Liberar la conexión
+        connection.release();
     }
 };
 

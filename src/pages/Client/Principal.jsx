@@ -104,7 +104,7 @@ function Principal() {
     return (
         <LayoutClient>
             <div className="overflow-x-hidden">
-                <div className="mx-4 my-2 flex justify-between items-center py-4">
+                <div className="mx-4 flex justify-between items-center py-4">
                     <h1 className="text-2xl md:text-3xl font-bold text-blue-950">Mis Reservaciones</h1>
                 </div>
 

@@ -237,7 +237,7 @@ function MetodosPago() {
             <div className="fixed bottom-0 left-0 right-0 flex justify-center p-4 bg-white shadow-lg">
                 <button
                     onClick={handleReservar}
-                    className="bg-blue-700 text-white rounded-full w-md p-3"
+                    className="bg-blue-700 cursor-pointer text-white rounded-full w-md p-3"
                 >
                     Reservar
                 </button>

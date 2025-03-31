@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
 import LayoutClient from "../../layout/LayoutClient.jsx";
-import CanchaImg from "../../../public/canchaPadel.jpg";
 import { formatTime } from "../../utils/formatTime.jsx";
 import { ClipLoader } from "react-spinners"; // Importar el spinner
 
@@ -196,7 +195,7 @@ function Reservar() {
                     <div className="fixed bottom-0 left-0 right-0 flex justify-center p-4 bg-white shadow-lg">
                         <button
                             onClick={handleReservarClick}
-                            className="bg-blue-700 text-white rounded-full w-md p-3"
+                            className="bg-blue-700 cursor-pointer text-white rounded-full w-md p-3"
                         >
                             Métodos de Pago
                         </button>

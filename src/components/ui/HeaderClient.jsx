@@ -1,62 +1,84 @@
-import { useState } from 'react';
-import { Link } from 'react-router'; // Cambia a 'react-router-dom'
-import logo from '../../assets/logo1.png';
-import SidebarClient from './SidebarClient';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router';
+import logo from "../../../public/Logo-Waikiki-BLANCO.png";
+import { ArrowRightOnRectangleIcon, UserPlusIcon, ArrowLeftOnRectangleIcon } from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router';
 
 const HeaderClient = () => {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const navigate = useNavigate();
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-    const toggleSidebar = () => {
-        setIsSidebarOpen(!isSidebarOpen);
+    useEffect(() => {
+        const checkToken = async () => {
+            try {
+                const response = await fetch('http://localhost:3000/api/usuarios/verificarToken', {
+                    method: 'GET',
+                    credentials: 'include', 
+                });
+
+                setIsAuthenticated(response.ok);
+            } catch (error) {
+                console.error('Error al verificar el token:', error);
+                setIsAuthenticated(false);
+            }
+        };
+
+        checkToken();
+    }, []);
+
+    const handleLogout = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch('http://localhost:3000/api/usuarios/logout', {
+                method: 'POST',
+                credentials: 'include',
+            });
+
+            if (response.ok) {
+                navigate('/iniciarsesion');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <>
-            <header className="bg-white w-full flex justify-between items-center p-4 shadow-lg z-50">
-                <Link to="/principal" className="flex items-center">
-                    <img src={logo} alt="logo" className="w-30 max-w-full" /> {/* Asegura que la imagen no exceda el ancho */}
-                </Link>
+        <header className="bg-blue-950 w-full flex justify-between items-center p-4 shadow-lg z-50">
+            <Link to="/principal" className="flex items-center">
+                <img src={logo} alt="logo" className="w-20 max-w-full" />
+            </Link>
 
-                {/* Menú Hamburguesa */}
-                <button
-                    onClick={toggleSidebar}
-                    className="px-4 text-black cursor-pointer focus:outline-none"
-                    aria-label="Abrir menú"
-                >
-                    <svg
-                        className="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
+            <div className="flex items-center mx-4 space-x-4">
+                {isAuthenticated ? (
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center space-x-1 text-white cursor-pointer"
+                        disabled={loading}
                     >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M4 6h16M4 12h16m-7 6h7"
-                        />
-                    </svg>
-                </button>
-            </header>
-
-            {/* Sidebar */}
-            <div
-                className={`fixed inset-y-0 right-0 w-64 bg-[#113872] transform ${
-                    isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-                } transition-transform duration-600 ease-in-out z-40 overflow-x-hidden`}
-            >
-                <SidebarClient />
+                        <ArrowRightOnRectangleIcon className="w-6 h-6" />
+                        <span>{loading ? 'Saliendo...' : 'Salir'}</span>
+                    </button>
+                ) : (
+                    <>
+                        <Link 
+                            to="/iniciarsesion" 
+                            className="flex items-center cursor-pointer space-x-1 text-white"
+                        >
+                            <span>Iniciar sesión</span>
+                        </Link>
+                        <Link 
+                            to="/registrarse" 
+                            className="flex items-center cursor-pointer space-x-1 text-white"
+                        >
+                            <span>Registrarse</span>
+                        </Link>
+                    </>
+                )}
             </div>
-
-            {/* Overlay para cerrar el Sidebar */}
-            {isSidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/50 z-30"
-                    onClick={toggleSidebar}
-                />
-            )}
-        </>
+        </header>
     );
 };
 
