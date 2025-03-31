@@ -12,7 +12,7 @@ CREATE TABLE usuarios (
     codigoPais VARCHAR(10),                 
     role ENUM('usuario', 'admin') NOT NULL,  
     isBlocked BOOLEAN DEFAULT FALSE        
-    profileImage VARCHAR(255)
+    perfil VARCHAR(255)
 );
 
 -- Tabla de Canchas
@@ -50,7 +50,7 @@ CREATE TABLE pagos (
     user_id INT NOT NULL,
     reserva_id INT NOT NULL,
     amount DECIMAL(10, 2) NOT NULL,
-    payment_method ENUM('efectivo', 'pago movil', 'zelle') NOT NULL,
+    payment_method ENUM('efectivo', 'pago movil', 'zelle', 'punto de venta') NOT NULL,
     payment_proof VARCHAR(255),
     payment_status ENUM('pendiente', 'completado', 'rechazado') DEFAULT 'pendiente',
     FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE,

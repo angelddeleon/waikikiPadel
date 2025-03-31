@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router'; // Asegúrate de usar 'react-router-dom'
-import logo from '../../assets/logo.png';
+import logo from '../../../public/Logo-Waikiki-NEGRO.png';
 import MenuItemClient from '../MenuItemClient.jsx';
 import { UserIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router';

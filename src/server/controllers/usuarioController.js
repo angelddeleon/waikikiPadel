@@ -56,7 +56,10 @@ export const crearUsuario = async (req, res) => {
     return res.status(400).json({ error: "La contraseña es obligatoria" });
   }
 
+
+
   try {
+
     // Crear el nuevo usuario en la base de datos
     const result = await createUsuario({ nombre, email, telefono, password, codigoPais, role });
     setPerfil(email,filname );

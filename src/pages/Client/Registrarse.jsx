@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router"; // Cambié la importación a react-router-dom
 import LayoutRegistrarse from "../../layout/LayoutRegistrarse";
-import logo from '../../assets/logo1.png';
+import logo from "../../../public/Logo-Waikiki-NEGRO.png";
 import defaultUser from '../../assets/defaultUser.jpg';
 import { useState, useEffect } from "react";
 import Select from "react-select";
@@ -84,6 +84,13 @@ function Registrarse() {
         if (!selectedCountry) {
             newErrors.pais = "Debes seleccionar un país.";
         }
+
+        if (!telefono.trim()) {
+            newErrors.telefono = "El número de teléfono es obligatorio.";
+        } else if (telefono.length < 9 || telefono.length > 12 || !/^\d+$/.test(telefono)) {
+            newErrors.telefono = "El número de teléfono debe tener entre 9 y 12 dígitos y solo números.";
+        }
+    
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
