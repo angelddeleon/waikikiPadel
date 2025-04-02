@@ -1,41 +1,39 @@
--- Crear la base de datos (si no existe)
 CREATE DATABASE IF NOT EXISTS waikiki;
 USE waikiki;
 
--- Tabla de Usuarios
+-- Tabla para los usuarios
 CREATE TABLE usuarios (
-    id INT AUTO_INCREMENT PRIMARY KEY,       
-    nombre VARCHAR(255) NOT NULL,           
-    email VARCHAR(255) NOT NULL UNIQUE,     
-    telefono VARCHAR(15),                   
-    password VARCHAR(255) NOT NULL,       
-    codigoPais VARCHAR(10),                 
-    role ENUM('usuario', 'admin') NOT NULL,  
-    isBlocked BOOLEAN DEFAULT FALSE        
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    telefono VARCHAR(15),
+    password VARCHAR(255) NOT NULL,
+    codigoPais VARCHAR(10),
+    role ENUM('usuario', 'admin') NOT NULL,
+    isBlocked BOOLEAN DEFAULT FALSE,
     perfil VARCHAR(255)
 );
 
-
--- Tabla de Canchas
+-- Tabla para las canchas
 CREATE TABLE canchas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    image VARCHAR(255) NOT NULL, 
+    image VARCHAR(255) NOT NULL,
     price_per_hour DECIMAL(10, 2) NOT NULL
 );
 
--- Tabla de Horarios
+-- Tabla para los horarios
 CREATE TABLE horarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     cancha_id INT NOT NULL,
-    date DATE NOT NULL, 
+    date DATE NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
     estado ENUM('disponible', 'ocupado') DEFAULT 'disponible',
-    FOREIGN KEY (cancha_id) REFERENCES canchas(id) ON DELETE CASCADE
+    FOREIGN KEY (cancha_id) REFERENCES canchas(id)
 );
 
--- Tabla de Pagos (actualizada)
+-- Tabla para los pagos
 CREATE TABLE pagos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -44,35 +42,38 @@ CREATE TABLE pagos (
     payment_proof VARCHAR(255),
     payment_status ENUM('pendiente', 'completado', 'rechazado') DEFAULT 'pendiente',
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    tasa_dia DECIMAL(10, 2) NOT NULL
-    FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    tasa_valor DECIMAL(10, 2) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES usuarios(id)
+);
 
--- Tabla de Reservaciones (actualizada)
+-- Tabla para las reservaciones
 CREATE TABLE reservaciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     horario_id INT NOT NULL,
     pago_id INT,
     status ENUM('pendiente', 'confirmada', 'cancelada', 'terminada') DEFAULT 'pendiente',
-    FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE,
-    FOREIGN KEY (horario_id) REFERENCES horarios(id) ON DELETE CASCADE,
-    FOREIGN KEY (pago_id) REFERENCES pagos(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    FOREIGN KEY (user_id) REFERENCES usuarios(id),
+    FOREIGN KEY (horario_id) REFERENCES horarios(id),
+    FOREIGN KEY (pago_id) REFERENCES pagos(id)
+);
 
+-- Tabla para las clases
 CREATE TABLE clases (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
     horario_id INT NOT NULL,
     status ENUM('pendiente', 'realizada', 'cancelada') DEFAULT 'pendiente',
-    FOREIGN KEY (horario_id) REFERENCES horarios(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    FOREIGN KEY (horario_id) REFERENCES horarios(id)
+);
 
+-- Tabla para la tasa
 CREATE TABLE tasa (
-    id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-    monto DECIMAL(10, 2) NOT NULL COMMENT 'Valor de la tasa con 2 decimales',
-    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha de última actualización',
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT 'Tabla de tasas aplicables';
+    id INT PRIMARY KEY DEFAULT 1,
+    monto DECIMAL(10, 2) NOT NULL,
+    fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 
 INSERT INTO usuarios (
     nombre, 
@@ -150,4 +151,4 @@ VALUES ('Pickeball 2', '/pickeball2.webp', 10.00);
 
 -- Insertar un solo registro
 INSERT INTO canchas (name, image, price_per_hour)
-VALUES ('Pickeball 3', '/pickeball3.webp', 10.00);
+VALUES ('Pickeball 3', '/pickeball3.webp', 10.00); 
