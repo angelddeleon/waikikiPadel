@@ -44,6 +44,7 @@ CREATE TABLE pagos (
     payment_proof VARCHAR(255),
     payment_status ENUM('pendiente', 'completado', 'rechazado') DEFAULT 'pendiente',
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    tasa_dia DECIMAL(10, 2) NOT NULL
     FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

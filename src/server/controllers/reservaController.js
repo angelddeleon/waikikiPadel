@@ -58,12 +58,24 @@ export const crearReserva = async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        // First create the payment
+        // Obtener el valor de monto de la tabla tasa donde id = 1
+        const [tasaResult] = await connection.query(
+            `SELECT monto FROM tasa WHERE id = 1`
+        );
+
+        if (tasaResult.length === 0) {
+            await connection.rollback();
+            return res.status(400).json({ message: "No se encontró la tasa configurada" });
+        }
+
+        const tasa_monto = tasaResult[0].monto;
+
+        // Insertar en pagos (asegúrate que la columna en la tabla se llame igual)
         const [pagoResult] = await connection.query(
             `INSERT INTO pagos 
-             (user_id, amount, payment_method, payment_proof, payment_status) 
-             VALUES (?, ?, ?, ?, ?)`,
-            [user_id, monto, metodoPago, nombreImg, "pendiente"]
+            (user_id, amount, payment_method, payment_proof, payment_status, tasa_valor) 
+            VALUES (?, ?, ?, ?, ?, ?)`,
+            [user_id, monto, metodoPago, nombreImg, "pendiente", tasa_monto]
         );
         const pago_id = pagoResult.insertId;
 
@@ -157,25 +169,53 @@ export const eliminarReserva = async (req, res) => {
     }
 };
 
-// Función para obtener las reservas de un usuario (incluyendo las canceladas)
+// Función para obtener las reservas de un usuario organizadas
 export const obtenerReservasUsuario = async (req, res) => {
     try {
         const user_id = req.user.userId;
 
-        console.log("ID recibido:", user_id);  // Verifica que el ID está llegando correctamente
+        // Consulta SQL mejorada con ordenamiento y filtrado
+        const [reservas] = await pool.query(`
+            SELECT 
+                r.id,
+                r.status,
+                h.date AS fecha_reserva,
+                DATE_FORMAT(h.date, '%d/%m/%Y') AS fecha_formateada,
+                h.start_time,
+                h.end_time,
+                c.name AS cancha_name,
+                c.image AS cancha_image,
+                p.payment_status,
+                CASE 
+                    WHEN h.date < CURDATE() THEN 'pasado'
+                    WHEN h.date = CURDATE() AND h.end_time < CURTIME() THEN 'pasado'
+                    ELSE 'futuro'
+                END AS estado_tiempo
+            FROM reservaciones r
+            JOIN horarios h ON r.horario_id = h.id
+            JOIN canchas c ON h.cancha_id = c.id
+            LEFT JOIN pagos p ON r.pago_id = p.id
+            WHERE r.user_id = ?
+            AND (
+                -- Solo reservaciones futuras o de hoy que no hayan terminado
+                (h.date > CURDATE()) OR 
+                (h.date = CURDATE() AND h.end_time > CURTIME())
+            )
+            AND (
+                -- Excluir canceladas de días anteriores
+                NOT (r.status = 'cancelada' AND h.date < CURDATE())
+            )
+            ORDER BY 
+                h.date ASC,            -- Orden por fecha (hoy, luego mañana)
+                h.start_time ASC       -- Luego por hora de inicio
+        `, [user_id]);
 
-        // Llamar al modelo para obtener todas las reservas del usuario
-        const reservas = await getReservasPorUsuario(user_id);
-
-        // Si no tiene reservas, devolver un array vacío
-        if (!reservas || reservas.length === 0) {
-            return res.status(200).json([]); // Cambié el 404 a 200 y retorno un array vacío
-        }
-
-        // Devolver todas las reservas como un array de objetos
         res.status(200).json(reservas);
     } catch (error) {
-        console.error("Error al obtener las reservas del usuario:", error);
-        res.status(500).json({ message: "Error al obtener las reservas", error });
+        console.error("Error al obtener reservas:", error);
+        res.status(500).json({ 
+            message: "Error al obtener las reservas",
+            error: error.message 
+        });
     }
 };
