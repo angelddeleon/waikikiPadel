@@ -67,3 +67,17 @@ body, html {
     padding-right: 0 !important; /* Asegúrate de que no haya padding derecho */
     margin-right: 0 !important; /* Asegúrate de que no haya margen derecho */
 }
+
+/* Estilos para el scroll horizontal */
+.scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+}
+
+.whitespace-nowrap {
+    white-space: nowrap;
+}

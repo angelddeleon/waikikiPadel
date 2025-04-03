@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import LayoutClient from "../../layout/LayoutClient.jsx";
-import CardCancha from "../../components/CardCancha.jsx"; // Asegúrate de que el componente CardCancha esté correctamente configurado
-import { ClipLoader } from "react-spinners"; // Importar el spinner
+import CardCancha from "../../components/CardCancha.jsx";
+import { ClipLoader } from "react-spinners";
 
 function Canchas() {
-    const [canchas, setCanchas] = useState([]); // Estado para las canchas
-    const [loading, setLoading] = useState(true); // Estado para manejar la carga
-    const [error, setError] = useState(null); // Estado para manejar errores
+    const [canchas, setCanchas] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     // Obtener canchas y horarios
     useEffect(() => {
@@ -22,7 +22,7 @@ function Canchas() {
                 // Obtener los horarios disponibles para cada cancha
                 const canchasConHorarios = await Promise.all(
                     dataCanchas.map(async (cancha) => {
-                        const fechaActual = new Date().toISOString().split("T")[0]; // Fecha actual
+                        const fechaActual = new Date().toISOString().split("T")[0];
                         const responseHorarios = await fetch(
                             `http://localhost:3000/api/horarios/disponibles?cancha_id=${cancha.id}&fecha=${fechaActual}`
                         );
@@ -30,22 +30,22 @@ function Canchas() {
                             throw new Error("Error al obtener los horarios");
                         }
                         const dataHorarios = await responseHorarios.json();
-                        return { ...cancha, horarios: dataHorarios }; // Agregar horarios a la cancha
+                        return { ...cancha, horarios: dataHorarios };
                     })
                 );
     
-                setCanchas(canchasConHorarios); // Actualiza el estado con las canchas y sus horarios
+                setCanchas(canchasConHorarios);
             } catch (error) {
-                setError(error.message); // Maneja el error
+                setError(error.message);
             } finally {
-                setLoading(false); // Finaliza la carga
+                setLoading(false);
             }
         };
     
-        fetchCanchasYHorarios(); // Llama a la función para obtener los datos
+        fetchCanchasYHorarios();
     }, []);
 
-    // Si está cargando o hay un error, muestra el Spinner o el error
+    // Estados de carga y error
     if (loading) {
         return (
             <LayoutClient>
@@ -68,34 +68,30 @@ function Canchas() {
 
     return (
         <LayoutClient>
-            <div className="px-0 md-mx-4 py-8">
-                <h1 className="text-3xl font-bold text-blue-950 px-2 mb-4">Canchas Disponibles</h1>
+            <div className="px-4 py-8">
+                {/* Título */}
+                <h1 className="text-2xl md:text-3xl font-bold text-blue-950 mb-6">Canchas Disponibles</h1>
 
-                                {/* Canchas disponibles */}
-                                <div className="flex flex-col w-full ">
+                {/* Contenedor de canchas */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {canchas.map((cancha) => (
+                        <CardCancha
+                            key={cancha.id}
+                            id={cancha.id}
+                            name={cancha.name}
+                            image={cancha.image}
+                            price_per_hour={cancha.price_per_hour}
+                            horarios={cancha.horarios}
+                        />
+                    ))}
+                </div>
 
-                                    {/* Mostrar spinner o error */}
-                                    {loading ? (
-                                        <div className="flex justify-center items-center h-64">
-                                            <ClipLoader color="#1E3A8A" size={50} />
-                                        </div>
-                                    ) : error ? (
-                                        <p className="text-center text-red-500">Error: {error}</p>
-                                    ) : (
-                                        <div id="canchasCont" className="flex flex-wrap w-full">
-                                            {canchas.map((cancha) => (
-                                                <CardCancha
-                                                    key={cancha.id}
-                                                    id={cancha.id}
-                                                    name={cancha.name}
-                                                    image={cancha.image}
-                                                    price_per_hour={cancha.price_per_hour}
-                                                    horarios={cancha.horarios} // Pasar los horarios como prop
-                                                />
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                {/* Mensaje cuando no hay canchas */}
+                {!loading && canchas.length === 0 && (
+                    <div className="text-center py-10">
+                        <p className="text-gray-600">No hay canchas disponibles en este momento.</p>
+                    </div>
+                )}
             </div>
         </LayoutClient>
     );

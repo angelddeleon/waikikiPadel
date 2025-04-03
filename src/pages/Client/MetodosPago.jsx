@@ -3,244 +3,271 @@ import { useLocation, useNavigate } from "react-router";
 import LayoutClient from "../../layout/LayoutClient.jsx";
 import { MetodoPago } from "../../components/MetodoPago.jsx";
 import { formatTime } from "../../utils/formatTime.jsx";
+import Swal from "sweetalert2";
 
 function MetodosPago() {
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
-    const canchaId = searchParams.get("cancha");
-    const fecha = searchParams.get("fecha");
-    const horariosIds = searchParams.get("horarios").split(",");
-    const montoTotal = searchParams.get("montoTotal");
-
-    const [cancha, setCancha] = useState(null);
-    const [metodoSeleccionado, setMetodoSeleccionado] = useState(null);
-    const [imagenPagoMovil, setImagenPagoMovil] = useState(null);
-
-    const [imagenZelle, setImagenZelle] = useState(null);
-    const [File, setFile] = useState(null);
-    const [error, setError] = useState("");
     const navigate = useNavigate();
 
-    const informacionMetodos = {
-        "Pago Móvil": {
-            instrucciones: "Realiza el pago a través de Pago Móvil usando el siguiente número: 0412-1234567.",
-            contacto: "Banco: Banco de Venezuela",
-        },
-        "Zelle": {
-            instrucciones: "Envía el pago a través de Zelle al correo: pagos@canchas.com.",
-            contacto: "Correo: pagos@canchas.com",
-        },
-        "Efectivo": {
-            instrucciones: "Paga en efectivo al llegar a la cancha.",
-            contacto: "Contacto: 0412-7654321",
-        },
+    // Obtener parámetros
+    const canchaId = searchParams.get("cancha");
+    const fecha = searchParams.get("fecha");
+    const horariosIds = searchParams.get("horarios")?.split(",") || [];
+    const montoTotal = searchParams.get("montoTotal");
+
+    // Estados
+    const [cancha, setCancha] = useState(null);
+    const [metodoSeleccionado, setMetodoSeleccionado] = useState(null);
+    const [comprobante, setComprobante] = useState(null);
+    const [file, setFile] = useState(null);
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    // Validar parámetros
+    useEffect(() => {
+        if (!canchaId || !fecha || !horariosIds.length || !montoTotal) {
+            setError("Faltan parámetros necesarios");
+            Swal.fire({
+                title: "Error",
+                text: "Faltan parámetros para la reserva",
+                icon: "error"
+            }).then(() => navigate("/principal"));
+        }
+    }, [canchaId, fecha, horariosIds, montoTotal, navigate]);
+
+    // Datos de métodos de pago
+    const metodosPago = {
+        "Pago Móvil": { requiereComprobante: true },
+        "Zelle": { requiereComprobante: true },
+        "Efectivo": { requiereComprobante: false }
     };
 
+    // Obtener cancha
     useEffect(() => {
-        // Fetch de la cancha por el ID
         const fetchCancha = async () => {
             try {
-                const response = await fetch(`http://localhost:3000/api/canchas/${canchaId}`);
-                if (!response.ok) {
-                    throw new Error("Error al obtener los detalles de la cancha");
-                }
-                const dataCancha = await response.json();
-                setCancha(dataCancha);
-            } catch (error) {
-                setError("No se pudo obtener la cancha.");
+                setLoading(true);
+                const res = await fetch(`http://localhost:3000/api/canchas/${canchaId}`);
+                if (!res.ok) throw new Error("Error al obtener cancha");
+                setCancha(await res.json());
+            } catch (err) {
+                setError(err.message);
+                Swal.fire("Error", "No se pudo obtener la cancha", "error");
+            } finally {
+                setLoading(false);
             }
         };
 
-        fetchCancha();
+        if (canchaId) fetchCancha();
     }, [canchaId]);
 
-    // Función para sumar una hora a una hora dada
-    const sumarUnaHora = (hora) => {
-        const [h, m, s] = hora.split(":"); // Separar horas, minutos y segundos
-        const fecha = new Date();
-        fecha.setHours(parseInt(h, 10) + 1); // Sumar una hora
-        fecha.setMinutes(parseInt(m, 10));
-        fecha.setSeconds(parseInt(s, 10));
-        return fecha.toTimeString().split(" ")[0]; // Devolver en formato HH:MM:SS
-    };
-
-    // Crear un array de objetos con las horas de inicio y fin
-    const horariosFormateados = horariosIds.map((horaInicio) => {
-        const horaFin = sumarUnaHora(horaInicio); // Sumar una hora a la hora de inicio
+    // Formatear horarios
+    const horariosFormateados = horariosIds.map(hora => {
+        const fin = new Date(`2000-01-01T${hora}`);
+        fin.setHours(fin.getHours() + 1);
         return {
-            horaInicio: formatTime(horaInicio), // Formatear la hora de inicio
-            horaFin: formatTime(horaFin),       // Formatear la hora de fin
+            inicio: formatTime(hora),
+            fin: formatTime(fin.toTimeString().slice(0, 8))
         };
     });
 
-    const handleSeleccion = (metodo) => {
-        if (metodoSeleccionado === metodo) {
-            setMetodoSeleccionado(null);
-            if (metodo === "Pago Móvil") setImagenPagoMovil(null);
-            if (metodo === "Zelle") setImagenZelle(null);
-        } else {
-            setMetodoSeleccionado(metodo);
-        }
-    };
+    // Manejar archivo
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-    const handleFileChange = (event, setImagen, otroSetImagen) => {
-        const file = event.target.files[0];
-
-        if (file) {
-            setFile( event.target.files[0])
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagen(reader.result);
-                otroSetImagen(null);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleReservar = async () => {
-        if (!metodoSeleccionado) {
-            setError("Debes seleccionar un método de pago para reservar.");
+        // Validar tipo y tamaño
+        const tiposValidos = ["image/jpeg", "image/png", "image/jpg", "application/pdf"];
+        if (!tiposValidos.includes(file.type)) {
+            setError("Formato no válido. Use JPEG, PNG, JPG o PDF");
             return;
         }
-    
-        if (
-            (metodoSeleccionado === "Pago Móvil" && !imagenPagoMovil) ||
-            (metodoSeleccionado === "Zelle" && !imagenZelle)
-        ) {
-            setError("Debes subir un comprobante de pago para reservar.");
+        if (file.size > 5 * 1024 * 1024) {
+            setError("El archivo es muy grande (máx. 5MB)");
             return;
         }
-    
+
+        setFile(file);
         setError("");
-    
+
+        // Vista previa si es imagen
+        if (file.type.startsWith("image/")) {
+            const reader = new FileReader();
+            reader.onload = () => setComprobante(reader.result);
+            reader.readAsDataURL(file);
+        } else {
+            setComprobante(null);
+        }
+    };
+
+    // Procesar reserva
+    const procesarReserva = async () => {
+        setLoading(true);
+        
         try {
-            // Crear un array de horarios con las horas de inicio y fin
-            const horarios = horariosIds.map((horaInicio) => ({
-                start_time: horaInicio,
-                end_time: sumarUnaHora(horaInicio),
-            }));
-    
-            // Enviar la solicitud al backend
-            const reservaResponse = await fetch('http://localhost:3000/api/reservas', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',  // Esto asegura que el token se envíe con la solicitud
-                body: JSON.stringify({
-                    cancha_id: canchaId, // ID de la cancha
-                    fecha: fecha, // Fecha de la reserva
-                    horarios: horarios, // Array de horarios,
-                    monto: montoTotal,
-                    metodoPago: metodoSeleccionado,
-                    nombreImg:File?File.name:null
-                }),
-            });
-            if (File) {
+            // 1. Subir comprobante si es necesario
+            let nombreArchivo = null;
+            if (file && metodosPago[metodoSeleccionado]?.requiereComprobante) {
                 const formData = new FormData();
-                    formData.append("image", File);
-                    
-                const reservaResponse2 = await fetch('http://localhost:3000/api/reservas/ImageCom', {
+                formData.append("comprobante", file);
+                
+                const uploadRes = await fetch('http://localhost:3000/api/upload-comprobante', {
                     method: 'POST',
+                    credentials: 'include',
                     body: formData
                 });
 
+                if (!uploadRes.ok) throw new Error("Error al subir comprobante");
+                const { filename } = await uploadRes.json();
+                nombreArchivo = filename;
             }
 
-    
-            const reservaData = await reservaResponse.json();
-    
-            if (!reservaResponse.ok) {
-                throw new Error(reservaData.message || "Error al crear la reserva");
-            }
-    
-            console.log("Reserva exitosa");
-            navigate("/principal"); // Redirigir al usuario a la página principal
-        } catch (error) {
-            console.error("Error al realizar la reserva:", error);
-            setError("Error al realizar la reserva. Por favor, intenta de nuevo.");
+            // 2. Crear reserva
+            const horarios = horariosIds.map(hora => {
+                const fin = new Date(`2000-01-01T${hora}`);
+                fin.setHours(fin.getHours() + 1);
+                return {
+                    start_time: hora,
+                    end_time: fin.toTimeString().slice(0, 8)
+                };
+            });
+
+            const reservaRes = await fetch('http://localhost:3000/api/reservas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    cancha_id: canchaId,
+                    fecha,
+                    horarios,
+                    monto: montoTotal,
+                    metodoPago: metodoSeleccionado,
+                    nombreImg: nombreArchivo
+                })
+            });
+
+            if (!reservaRes.ok) throw new Error("Error al crear reserva");
+
+            // Éxito
+            await Swal.fire({
+                title: "¡Reserva exitosa!",
+                text: `Tu reserva en ${cancha?.name} ha sido confirmada`,
+                icon: "success"
+            });
+            navigate("/principal");
+
+        } catch (err) {
+            console.error("Error:", err);
+            setError(err.message);
+            Swal.fire("Error", err.message || "Error al procesar la reserva", "error");
+        } finally {
+            setLoading(false);
         }
     };
 
+    // Validar y confirmar reserva
+    const handleReservar = () => {
+        if (!metodoSeleccionado) {
+            setError("Seleccione un método de pago");
+            return;
+        }
+        if (metodosPago[metodoSeleccionado]?.requiereComprobante && !file) {
+            setError("Debe subir un comprobante");
+            return;
+        }
+
+        Swal.fire({
+            title: "Confirmar reserva",
+            text: `¿Desea reservar la cancha ${cancha?.name} por $${montoTotal}?`,
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Sí, reservar",
+            cancelButtonText: "Cancelar"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                procesarReserva();
+            }
+        });
+    };
+
+    if (loading) {
+        return (
+            <LayoutClient>
+                <div className="flex justify-center items-center h-screen">
+                    <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+            </LayoutClient>
+        );
+    }
+
     return (
         <LayoutClient>
-            <div className="flex justify-center p-2">
-                <div className="flex flex-col items-center w-full max-w-md h-100">
-                    <div className="border border-gray-500 rounded-xl w-full shadow-lg">
-                        <div className="p-2">
-                            <h1 className="text-2xl font-bold text-blue-950">Reservar</h1>
+            <div className="container mx-auto px-4 py-8">
+                <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
+                    <div className="p-6 bg-blue-50 border-b border-gray-200">
+                        <h1 className="text-2xl font-bold text-blue-900">Confirmar Reserva</h1>
+                    </div>
+
+                    <div className="p-6">
+                        {/* Detalles de la reserva */}
+                        <div className="mb-6">
+                            <h2 className="text-xl font-bold">{cancha?.name || "Cargando..."}</h2>
+                            <p className="text-gray-600">Fecha: {fecha}</p>
                         </div>
 
-                        <div className="flex justify-between items-center my-4 p-2">
-                            <h2 className="text-xl font-bold text-green-600">{cancha?.name || "Cargando..."}</h2>
-                            <p className="text-blue-950 font-bold">{fecha}</p>
+                        {/* Horarios */}
+                        <div className="mb-6">
+                            <h3 className="text-lg font-semibold mb-3">Horarios:</h3>
+                            {horariosFormateados.map((horario, i) => (
+                                <div key={i} className="flex justify-between mb-2">
+                                    <span>{horario.inicio} - {horario.fin}</span>
+                                </div>
+                            ))}
                         </div>
 
-                        {/* Mostrar los rangos de horas seleccionadas */}
-                        {horariosFormateados.map((horario, index) => (
-                            <div key={index} className="flex justify-center items-center my-4 font-bold">
-                                <p className="m-2">Desde:</p>
-                                <p className="m-2 font-semibold text-white p-2 rounded-xl text-center w-25 bg-blue-950">{horario.horaInicio}</p>
-                                <p className="m-2">Hasta:</p>
-                                <p className="m-2 font-semibold text-white p-2 rounded-xl text-center w-25 bg-blue-950">{horario.horaFin}</p>
+                        {/* Métodos de pago */}
+                        <div className="mb-6">
+                            <h3 className="text-lg font-semibold mb-3">Método de Pago</h3>
+                            {Object.keys(metodosPago).map((metodo) => (
+                                <MetodoPago
+                                    key={metodo}
+                                    nombre={metodo}
+                                    seleccionado={metodoSeleccionado === metodo}
+                                    onChange={() => {
+                                        setMetodoSeleccionado(metodo);
+                                        setError("");
+                                    }}
+                                    requiereComprobante={metodosPago[metodo].requiereComprobante}
+                                    onFileChange={handleFileChange}
+                                    comprobante={comprobante}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Total */}
+                        <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+                            <h3 className="font-semibold">Total a pagar:</h3>
+                            <p className="text-2xl font-bold">${montoTotal}</p>
+                        </div>
+
+                        {/* Errores */}
+                        {error && (
+                            <div className="mb-6 p-3 bg-red-100 text-red-700 rounded">
+                                {error}
                             </div>
-                        ))}
+                        )}
 
-                        <div className="flex flex-col font-bold text-blue-950">
-                            <h3 className="text-xl font-bold mb-2 p-2">Métodos de Pago</h3>
-                            <ul className="scroll-blue overflow-y-auto" style={{ maxHeight: "400px" }}>
-                                <MetodoPago
-                                    nombre="Pago Móvil"
-                                    seleccionado={metodoSeleccionado === "Pago Móvil"}
-                                    onChange={() => handleSeleccion("Pago Móvil")}
-                                    informacion={informacionMetodos["Pago Móvil"]}
-                                    onFileChange={(e) => handleFileChange(e, setImagenPagoMovil, setImagenZelle)}
-                                    imagen={imagenPagoMovil}
-                                    setImagen={setImagenPagoMovil}
-                                    deshabilitado={!!imagenZelle}
-                                />
-                                <MetodoPago
-                                    nombre="Zelle"
-                                    seleccionado={metodoSeleccionado === "Zelle"}
-                                    onChange={() => handleSeleccion("Zelle")}
-                                    informacion={informacionMetodos["Zelle"]}
-                                    onFileChange={(e) => handleFileChange(e, setImagenZelle, setImagenPagoMovil)}
-                                    imagen={imagenZelle}
-                                    setImagen={setImagenZelle}
-                                    deshabilitado={!!imagenPagoMovil}
-                                />
-                                <MetodoPago
-                                    nombre="Efectivo"
-                                    seleccionado={metodoSeleccionado === "Efectivo"}
-                                    onChange={() => handleSeleccion("Efectivo")}
-                                    informacion={informacionMetodos["Efectivo"]}
-                                />
-                            </ul>
-                        </div>
+                        {/* Botón */}
+                        <button
+                            onClick={handleReservar}
+                            disabled={loading}
+                            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold"
+                        >
+                            {loading ? "Procesando..." : "Confirmar Reserva"}
+                        </button>
                     </div>
-
-                    <div id="precioCont" className="w-full max-w-md mt-6">
-                        <h3 className="text-xl font-bold">Monto a pagar</h3>
-                        <div className="bg-[#113872] text-white text-center rounded p-2 my-2 shadow-md">
-                            <p className="text-2xl font-bold">{montoTotal}$</p>
-                        </div>
-                    </div>
-
-                    {error && (
-                        <div className="text-red-500 text-center my-2">
-                            {error}
-                        </div>
-                    )}
                 </div>
-            </div>
-
-            <div className="fixed bottom-0 left-0 right-0 flex justify-center p-4 bg-white shadow-lg">
-                <button
-                    onClick={handleReservar}
-                    className="bg-blue-700 cursor-pointer text-white rounded-full w-md p-3"
-                >
-                    Reservar
-                </button>
             </div>
         </LayoutClient>
     );

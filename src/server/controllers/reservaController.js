@@ -6,124 +6,148 @@ import {
     deleteReserva,
 } from "../models/Reserva.js";
 import pool from "../config/db.js";
-
-
-import fs from 'fs';
 import multer from 'multer';
 import path from 'path';
 
-const storage = multer.diskStorage({
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Configuración de Multer para comprobantes
+const comprobanteDir = path.join(__dirname, '../../uploads/comprobante');
+const comprobanteStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-      const uploadPath = '../uploads/comprobante/';
-      fs.access(uploadPath, fs.constants.W_OK, (err) => {
-          if (err) {
-              console.error('No se puede escribir en la carpeta:', err);
-              return cb(new Error('Error al escribir en la carpeta destino.'));
-          }
-          cb(null, uploadPath);
-      });
+    cb(null, comprobanteDir);
   },
   filename: (req, file, cb) => {
-      cb(null, file.originalname); // Conserva el nombre original
-  },
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `comprobante-${uniqueSuffix}${ext}`);
+  }
 });
 
-const upload = multer({ storage });
-
-export const uploadImage = (req, res) => {
-  return new Promise((resolve, reject) => {
-      upload.single('image')(req, res, (err) => {
-          if (err) {
-              console.error('Error al subir la imagen:', err);
-              return reject(new Error('Error al subir la imagen'));
-          }
-          if (!req.body) {
-              return reject(new Error('No se proporcionó ninguna imagen'));
-          }
-           // Usa el nombre original en tu lógica
-          resolve(req.body.image); // Retorna la ruta del archivo
-      });
-  });
-};
+export const uploadImage = multer({
+  storage: comprobanteStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const filetypes = /jpeg|jpg|png|pdf/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error('Solo se permiten imágenes (JPEG, PNG, JPG) o PDF'));
+  }
+}).single('image');
 
 export const crearReserva = async (req, res) => {
-    const user_id = req.user.userId;
+    const user_id = req.user?.userId;
+    
+    if (!user_id) {
+        return res.status(401).json({ 
+            success: false,
+            error: "No autorizado. Debes iniciar sesión." 
+        });
+    }
+
     const { cancha_id, fecha, horarios, monto, metodoPago, nombreImg } = req.body;
 
-    if (!user_id) {
-        return res.status(400).json({ message: "No se pudo obtener el ID del usuario" });
+    // Validaciones básicas
+    if (!cancha_id || !fecha || !horarios || !monto || !metodoPago) {
+        return res.status(400).json({ 
+            success: false,
+            error: "Faltan datos requeridos para la reserva" 
+        });
     }
 
     const connection = await pool.getConnection();
     try {
         await connection.beginTransaction();
 
-        // Obtener el valor de monto de la tabla tasa donde id = 1
-        const [tasaResult] = await connection.query(
-            `SELECT monto FROM tasa WHERE id = 1`
-        );
+        // Verificar disponibilidad de horarios
+        for (const horario of horarios) {
+            const { start_time, end_time } = horario;
+            
+            const [existing] = await connection.query(
+                `SELECT id FROM horarios 
+                 WHERE cancha_id = ? AND date = ? AND (
+                    (start_time < ? AND end_time > ?) OR
+                    (start_time >= ? AND start_time < ?) OR
+                    (end_time > ? AND end_time <= ?)
+                 ) AND estado = 'ocupado'`,
+                [cancha_id, fecha, end_time, start_time, start_time, end_time, start_time, end_time]
+            );
 
-        if (tasaResult.length === 0) {
-            await connection.rollback();
-            return res.status(400).json({ message: "No se encontró la tasa configurada" });
+            if (existing.length > 0) {
+                await connection.rollback();
+                return res.status(409).json({ 
+                    success: false,
+                    error: `El horario ${start_time}-${end_time} ya está ocupado` 
+                });
+            }
         }
 
-        const tasa_monto = tasaResult[0].monto;
+        // Obtener tasa
+        const [tasa] = await connection.query(`SELECT monto FROM tasa WHERE id = 1`);
+        if (tasa.length === 0) {
+            await connection.rollback();
+            return res.status(500).json({ 
+                success: false,
+                error: "Error en configuración del sistema" 
+            });
+        }
 
-        // Insertar en pagos (asegúrate que la columna en la tabla se llame igual)
-        const [pagoResult] = await connection.query(
+        // Crear pago
+        const [pago] = await connection.query(
             `INSERT INTO pagos 
             (user_id, amount, payment_method, payment_proof, payment_status, tasa_valor) 
             VALUES (?, ?, ?, ?, ?, ?)`,
-            [user_id, monto, metodoPago, nombreImg, "pendiente", tasa_monto]
+            [user_id, monto, metodoPago, nombreImg || null, "pendiente", tasa[0].monto]
         );
-        const pago_id = pagoResult.insertId;
+        const pago_id = pago.insertId;
 
-        // Then create each reservation with the same payment ID
+        // Crear horarios y reservas
         for (const horario of horarios) {
             const { start_time, end_time } = horario;
 
-            // Verify if the schedule is available
-            const [horarioExistente] = await connection.query(
-                `SELECT id FROM horarios 
-                 WHERE cancha_id = ? AND date = ? AND start_time = ? AND end_time = ?`,
-                [cancha_id, fecha, start_time, end_time]
-            );
-
-            if (horarioExistente.length > 0) {
-                await connection.rollback();
-                return res.status(400).json({ message: "El horario ya está ocupado" });
-            }
-
-            // Create the schedule
-            const [horarioResult] = await connection.query(
+            const [horarioRes] = await connection.query(
                 `INSERT INTO horarios (cancha_id, date, start_time, end_time, estado) 
                  VALUES (?, ?, ?, ?, 'ocupado')`,
                 [cancha_id, fecha, start_time, end_time]
             );
 
-            // Create the reservation with the payment ID
             await connection.query(
                 `INSERT INTO reservaciones (user_id, horario_id, pago_id, status) 
                  VALUES (?, ?, ?, 'pendiente')`,
-                [user_id, horarioResult.insertId, pago_id]
+                [user_id, horarioRes.insertId, pago_id]
             );
         }
 
         await connection.commit();
-        res.status(201).json({ 
-            message: "Reserva y pago creados exitosamente",
-            pago_id: pago_id
+        
+        return res.status(201).json({ 
+            success: true,
+            message: "Reserva creada exitosamente",
+            data: {
+                pago_id,
+                cancha_id,
+                fecha,
+                comprobante_url: nombreImg ? `http://localhost:3000/uploads/comprobante/${nombreImg}` : null
+            }
         });
     } catch (error) {
         await connection.rollback();
-        console.error("Error al crear la reserva:", error);
-        res.status(500).json({ message: "Error al crear la reserva", error });
+        console.error("Error al crear reserva:", error);
+        return res.status(500).json({ 
+            success: false,
+            error: "Error interno del servidor al procesar la reserva"
+        });
     } finally {
         connection.release();
     }
 };
-
 
 // Obtener todas las reservas
 export const obtenerReservas = async (req, res) => {

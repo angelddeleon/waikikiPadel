@@ -8,7 +8,7 @@ function Horario({ canchaId, horario, fecha }) {
         <Link to={`/reservar?cancha=${canchaId}&hora=${horario}&fecha=${fecha}`}>
             <div
                 id="horario"
-                className="flex justify-center items-center border w-20 mr-2 p-2 shadow rounded hover:bg-[#113872] hover:text-white duration-300 ease-in"
+                className="flex justify-center items-center border w-30 mr-2 p-2 shadow rounded hover:bg-[#113872] hover:text-white duration-300 ease-in"
             >
                 <p>{formattedTime}</p> {/* Mostrar la hora formateada */}
             </div>

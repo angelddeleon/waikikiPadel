@@ -5,13 +5,14 @@ import {
   deleteUsuario,
   toggleBlockUsuario,
   findById,
-  setPerfil
+
 } from '../models/Usuario.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import multer from 'multer';
-import path from 'path';
+import pool from '../config/db.js';
+import rateLimit from 'express-rate-limit';
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -50,90 +51,49 @@ export const uploadImage = (req, res) => {
 
 
 export const crearUsuario = async (req, res) => {
-  const { nombre, email, telefono, password, codigoPais,filname, role = 'usuario' } = req.body;
-
-  if (!password) {
-    return res.status(400).json({ error: "La contraseña es obligatoria" });
-  }
-
-
-
   try {
+    const { nombre, email, telefono, password, codigoPais, role = 'usuario' } = req.body;
 
-    // Crear el nuevo usuario en la base de datos
+    // Validaciones mejoradas
+    if (!nombre || !email || !telefono || !password || !codigoPais) {
+      return res.status(400).json({ 
+        success: false,
+        error: "Todos los campos son obligatorios",
+        fields: { nombre, email, telefono, password, codigoPais }
+      });
+    }
+
+    // Verificar conexión a la base de datos primero
+    try {
+      await pool.query('SELECT 1');
+    } catch (dbError) {
+      console.error('Error de conexión a la base de datos:', dbError);
+      return res.status(500).json({ 
+        success: false,
+        error: "Error de conexión con la base de datos"
+      });
+    }
+
+    // Verificar si el email ya existe
+    const [existingUser] = await pool.query('SELECT id FROM usuarios WHERE email = ?', [email]);
+    if (existingUser.length > 0) {
+      return res.status(409).json({ 
+        success: false,
+        error: "El correo electrónico ya está registrado"
+      });
+    }
+
+    // Crear usuario
     const result = await createUsuario({ nombre, email, telefono, password, codigoPais, role });
-
-    // Generar el token JWT
-    const token = jwt.sign(
-      { userId: result.id, role: result.role }, // Payload del token
-      'secreto', // Clave secreta (debería estar en una variable de entorno)
-      { expiresIn: '1h' } // Expiración del token
-    );
-
-    // Establecer la cookie 'token' con el token JWT
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-      maxAge: 3600000, // 1 hora
-      path: '/'
-    });
-
-    // Respuesta exitosa con el token
-    res.status(201).json({
-      message: 'Usuario registrado exitosamente',
-      user: {
-        id: result.id,
-        nombre: result.nombre,
-        email: result.email,
-        role: result.role,
-      }
-    });
-  } catch (error) {
-    console.error('Error al registrar el usuario:', error);
-    res.status(400).json({ error: error.message });
-  }
-};
-
-export const login = async (req, res) => {
-  const { email, password } = req.body;
-
-  try {
-    // Buscar el usuario por email
-    const user = await findByEmail(email);
-    if (!user) {
-      return res.status(400).json({ error: 'Usuario no encontrado' });
-    }
-
-    // Verificar si el usuario está bloqueado
-    if (user.isBlocked) {
-      return res.status(400).json({ error: 'Usuario bloqueado' });
-    }
-
-    // Verificar si la contraseña está definida
-    if (!user.password) {
-      return res.status(400).json({ error: 'Contraseña no encontrada en la base de datos' });
-    }
-
-    // Asegúrate de que `password` no sea undefined ni nulo
-    if (password === undefined || password === null) {
-      return res.status(400).json({ error: 'Por favor, ingrese una contraseña' });
-    }
-
-    // Comparar contraseñas usando bcryptjs
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ error: 'Contraseña incorrecta' });
-    }
 
     // Generar token JWT
     const token = jwt.sign(
-      { userId: user.id, role: user.role },
-      'secreto',
+      { userId: result.insertId, role },
+      process.env.JWT_SECRET || 'secreto',
       { expiresIn: '1h' }
     );
 
-    // Establecer la cookie 'token' con el token JWT
+    // Configurar cookie
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -142,22 +102,141 @@ export const login = async (req, res) => {
       path: '/'
     });
 
-    // Respuesta exitosa con el token
+    // Respuesta exitosa
+    return res.status(201).json({
+      success: true,
+      message: 'Usuario registrado exitosamente',
+      user: { id: result.insertId, nombre, email, role }
+    });
+
+  } catch (error) {
+    console.error('Error detallado en crearUsuario:', {
+      message: error.message,
+      stack: error.stack,
+      requestBody: req.body
+    });
+    
+    return res.status(500).json({
+      success: false,
+      error: "Error en el servidor",
+      details: process.env.NODE_ENV === 'development' ? error.message : null
+    });
+  }
+};
+
+// Configuración de límite de intentos
+export const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // límite de 5 intentos por IP
+  message: 'Demasiados intentos de inicio de sesión desde esta IP, intente nuevamente más tarde',
+  skipSuccessfulRequests: true
+});
+
+export const login = async (req, res) => {
+  const { email, password } = req.body;
+
+  // Validaciones básicas
+  if (!email || !password) {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Email y contraseña son requeridos' 
+    });
+  }
+
+  try {
+    // Validación de formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Formato de email inválido' 
+      });
+    }
+
+    // Buscar el usuario
+    const user = await findByEmail(email);
+    if (!user) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Credenciales inválidas' // Mensaje genérico por seguridad
+      });
+    }
+
+    // Verificar usuario bloqueado
+    if (user.isBlocked) {
+      return res.status(403).json({ 
+        success: false,
+        error: 'Cuenta bloqueada. Contacte al administrador.' 
+      });
+    }
+
+    // Verificar contraseña
+    if (!user.password) {
+      console.error(`Usuario ${email} no tiene contraseña en la base de datos`);
+      return res.status(500).json({ 
+        success: false,
+        error: 'Error en el sistema. Contacte al administrador.' 
+      });
+    }
+
+    // Comparar contraseñas
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      // Registrar intento fallido (podrías guardar esto en la base de datos)
+      console.warn(`Intento fallido de inicio de sesión para el usuario: ${email}`);
+      
+      return res.status(401).json({ 
+        success: false,
+        error: 'Credenciales inválidas' 
+      });
+    }
+
+    // Generar token JWT
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        role: user.role,
+        email: user.email
+      },
+      process.env.JWT_SECRET || 'secreto',
+      { expiresIn: '1h' }
+    );
+
+    // Configurar cookie segura
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 3600000, // 1 hora
+      path: '/'
+    });
+
+    // Respuesta exitosa (sin enviar información sensible)
     res.json({
-      message: 'Login exitoso',
+      success: true,
+      message: 'Inicio de sesión exitoso',
       user: {
         id: user.id,
         nombre: user.nombre,
         email: user.email,
-        role: user.role,
-      },
+        role: user.role
+      }
     });
+
   } catch (error) {
-    console.error('Error en el login:', error);
-    res.status(500).json({ error: 'Error en el servidor' });
+    console.error('Error en el login:', {
+      message: error.message,
+      stack: error.stack,
+      email: email,
+      timestamp: new Date().toISOString()
+    });
+
+    res.status(500).json({ 
+      success: false,
+      error: 'Error en el servidor' 
+    });
   }
 };
-
 
 
 export const obtenerUsuarios = async (req, res) => {

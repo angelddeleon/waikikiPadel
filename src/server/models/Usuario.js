@@ -5,32 +5,44 @@ import bcrypt from 'bcryptjs';
 export const createUsuario = async (user) => {
   const { nombre, email, telefono, password, codigoPais, role = 'usuario' } = user;
 
-  if (!password) {
-    throw new Error("La contraseña es obligatoria");
+  // Validaciones adicionales
+  if (!nombre || !email || !telefono || !password || !codigoPais) {
+    throw new Error("Faltan campos obligatorios");
   }
 
-  // Cifra la contraseña antes de guardarla en la base de datos
-  const hashedPassword = await bcrypt.hash(password, 10);
-
   try {
-    const query = `
-      INSERT INTO usuarios (nombre, email, telefono, password, codigoPais, role, isBlocked)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-    const [result] = await pool.query(query, [
-      nombre,
-      email,
-      telefono,
-      hashedPassword, // Guarda la contraseña cifrada
-      codigoPais,
-      role,
-      false, // isBlocked por defecto es false
-    ]);
+    // Verificar conexión a la base de datos
+    await pool.query('SELECT 1');
+    
+    // Verificar email único
+    const [existing] = await pool.query('SELECT id FROM usuarios WHERE email = ?', [email]);
+    if (existing.length > 0) {
+      throw new Error("EMAIL_EXISTS");
+    }
+
+    // Hash de contraseña
+    const hashedPassword = await bcrypt.hash(password, 10)
+      .catch(err => {
+        throw new Error("Error al hashear la contraseña");
+      });
+
+    // Insertar usuario
+    const [result] = await pool.query(
+      `INSERT INTO usuarios (nombre, email, telefono, password, codigoPais, role, isBlocked)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [nombre, email, telefono, hashedPassword, codigoPais, role, false]
+    );
 
     return result;
   } catch (error) {
-    console.error('Error al crear el usuario:', error);
-    throw new Error('No se pudo crear el usuario');
+    console.error('Error en createUsuario:', {
+      message: error.message,
+      stack: error.stack,
+      userData: { email, nombre }
+    });
+    
+    // Relanzar error con más contexto
+    throw new Error(`MODEL_ERROR: ${error.message}`);
   }
 };
 
