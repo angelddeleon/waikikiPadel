@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router";
 import LayoutClient from "../../layout/LayoutClient.jsx";
 import { formatTime } from "../../utils/formatTime.jsx";
-import { ClipLoader } from "react-spinners"; // Importar el spinner
+import { ClipLoader } from "react-spinners";
 
 function Reservar() {
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
     const canchaId = searchParams.get("cancha");
     const fechaInicial = searchParams.get("fecha");
-    const horaInicial = searchParams.get("hora"); // Obtener la hora desde la URL
+    const horaInicial = searchParams.get("hora");
 
     const [cancha, setCancha] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -23,7 +23,7 @@ function Reservar() {
     };
 
     const [fechaSeleccionada, setFechaSeleccionada] = useState(fechaInicial || getFechaActualVenezuela());
-    const [horasSeleccionadas, setHorasSeleccionadas] = useState(horaInicial ? [horaInicial] : []); // Inicializar horas con la hora de la URL
+    const [horasSeleccionadas, setHorasSeleccionadas] = useState(horaInicial ? [horaInicial] : []);
     const [errorFecha, setErrorFecha] = useState("");
 
     const fechaActual = getFechaActualVenezuela();
@@ -31,6 +31,7 @@ function Reservar() {
     useEffect(() => {
         const fetchCanchaYHorarios = async () => {
             try {
+                setLoading(true);
                 const responseCancha = await fetch(`http://localhost:3000/api/canchas/${canchaId}`);
                 if (!responseCancha.ok) {
                     throw new Error("Error al obtener la cancha");
@@ -48,6 +49,7 @@ function Reservar() {
                 const canchaConHorarios = { ...dataCancha, horarios: dataHorarios };
 
                 setCancha(canchaConHorarios);
+                setError(null);
             } catch (error) {
                 setError(error.message);
             } finally {
@@ -78,6 +80,7 @@ function Reservar() {
     const handleFechaChange = (e) => {
         const nuevaFecha = e.target.value;
         setFechaSeleccionada(nuevaFecha);
+        setHorasSeleccionadas([]); // Limpiar selección al cambiar fecha
         validarFecha(nuevaFecha);
     };
 
@@ -87,13 +90,11 @@ function Reservar() {
             return;
         }
 
-        if (horasSeleccionadas.includes(start_time)) {
-            // Si ya está seleccionada, la quitamos
-            setHorasSeleccionadas(horasSeleccionadas.filter((hora) => hora !== start_time));
-        } else {
-            // Si no está seleccionada, la agregamos
-            setHorasSeleccionadas([...horasSeleccionadas, start_time]);
-        }
+        setHorasSeleccionadas(prev => 
+            prev.includes(start_time) 
+                ? prev.filter(hora => hora !== start_time) 
+                : [...prev, start_time]
+        );
     };
 
     const precioPorHora = cancha?.price_per_hour || 0;
@@ -110,16 +111,23 @@ function Reservar() {
     };
 
     if (loading) {
-        return <LayoutClient>
-            <div className="flex h-screen items-center justify-center">
-                <ClipLoader color="#1E3A8A" size={50} />
-            </div>
-
-        </LayoutClient>;
+        return (
+            <LayoutClient>
+                <div className="flex h-screen items-center justify-center">
+                    <ClipLoader color="#1E3A8A" size={50} />
+                </div>
+            </LayoutClient>
+        );
     }
 
     if (error) {
-        return <div>Error: {error}</div>;
+        return (
+            <LayoutClient>
+                <div className="flex h-screen items-center justify-center text-red-500">
+                    Error: {error}
+                </div>
+            </LayoutClient>
+        );
     }
 
     return (
@@ -127,77 +135,94 @@ function Reservar() {
             <div className="flex flex-col min-h-screen">
                 <img
                     src={cancha?.image}
-                    alt="Cancha de pádel"
+                    alt={`Cancha ${cancha?.name}`}
                     className="w-full h-40 object-cover"
                 />
 
-                <div id="infoCont" className="p-4 flex-grow overflow-y-auto h-130">
-                    <div className="flex justify-between items-center">
-                        <h1 className="text-2xl md:text-4xl font-bold text-blue-950">Reservar:</h1>
-                        <h2 className="text-2xl md:text-3xl font-bold mr-4 text-green-600">
-                            {cancha?.name || "Cargando..."}
+                <div className="p-4 flex-grow overflow-y-auto">
+                    <div className="flex justify-between items-center mb-6">
+                        <h1 className="text-2xl md:text-3xl font-bold text-blue-950">Reservar:</h1>
+                        <h2 className="text-xl md:text-2xl font-bold text-green-600">
+                            {cancha?.name}
                         </h2>
                     </div>
 
-                    <div className="flex flex-col md:flex-row md:justify-between my-4">
-                        <h1 className="text-2xl font-bold my-2 text-blue-950">Elige cuando deseas jugar:</h1>
-                        <div className="flex justify-center">
-                            <input
-                                type="date"
-                                value={fechaSeleccionada}
-                                onChange={handleFechaChange}
-                                min={fechaActual}
-                                className="shadow w-xs p-4"
-                            />
-                        </div>
+                    <div className="flex flex-col md:flex-row md:justify-between items-center mb-6">
+                        <h1 className="text-xl font-bold text-blue-950 mb-2 md:mb-0">
+                            Elige cuando deseas jugar:
+                        </h1>
+                        <input
+                            type="date"
+                            value={fechaSeleccionada}
+                            onChange={handleFechaChange}
+                            min={fechaActual}
+                            className="border p-2 rounded shadow"
+                        />
                     </div>
 
                     {errorFecha && (
-                        <div className="text-red-500 text-center my-2">
+                        <div className="text-red-500 text-center mb-4">
                             {errorFecha}
                         </div>
                     )}
 
-                    <div id="contHoras" className="flex flex-col my-1">
-                        <h2 className="text-xl font-bold my-2 text-blue-950">Horas disponibles</h2>
+                    <div className="mb-8">
+                        <h2 className="text-xl font-bold text-blue-950 mb-4">
+                            Horas disponibles
+                        </h2>
 
-                        <ul className="flex justify-center flex-wrap">
-                            {cancha?.horarios?.map((horario) => (
-                                <li key={horario.start_time}>
-                                    <div
-                                        id="horario"
-                                        className={`flex justify-center items-center border w-25 mr-2 mb-2 p-2 shadow-2xl rounded cursor-pointer ${horasSeleccionadas.includes(horario.start_time)
-                                            ? "bg-[#113872] text-white"
-                                            : "hover:bg-[#113872] hover:text-white"
-                                            } duration-300 ease-in`}
+                        {cancha?.horarios?.length > 0 ? (
+                            <div className="flex flex-wrap gap-3 justify-center">
+                                {cancha.horarios.map((horario) => (
+                                    <button
+                                        key={horario.start_time}
+                                        className={`px-4 py-2 border rounded-lg shadow transition-all ${
+                                            horasSeleccionadas.includes(horario.start_time)
+                                                ? "bg-blue-800 text-white"
+                                                : "bg-white hover:bg-blue-100"
+                                        }`}
                                         onClick={() => handleHoraClick(horario.start_time)}
                                     >
-                                        <p>{formatTime(horario.start_time)}</p>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
+                                        {formatTime(horario.start_time)}
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-6 bg-gray-50 rounded-lg border border-gray-200">
+                                <p className="text-gray-600 text-lg font-medium mb-2">
+                                    No hay horarios disponibles
+                                </p>
+                                <p className="text-blue-600">
+                                    Por favor selecciona otra fecha
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {horasSeleccionadas.length > 0 && (
-                        <>
-                            <div id="precioCont" className="flex flex-col">
-                                <h3 className="text-xl font-bold text-blue-950">Monto a pagar</h3>
-                                <div className="bg-[#113872] text-white text-center rounded p-4 my-4">
-                                    <p className="text-2xl font-bold">{montoTotal}$</p>
-                                </div>
+                        <div className="mb-8">
+                            <h3 className="text-xl font-bold text-blue-950 mb-2">
+                                Monto a pagar
+                            </h3>
+                            <div className="bg-blue-800 text-white text-center rounded-lg p-4 shadow">
+                                <p className="text-2xl font-bold">
+                                    ${montoTotal.toFixed(2)}
+                                </p>
+                                <p className="text-sm">
+                                    ({horasSeleccionadas.length} hora{horasSeleccionadas.length !== 1 ? 's' : ''} × ${precioPorHora.toFixed(2)})
+                                </p>
                             </div>
-                        </>
+                        </div>
                     )}
                 </div>
 
                 {horasSeleccionadas.length > 0 && (
-                    <div className="fixed bottom-0 left-0 right-0 flex justify-center p-4 bg-white shadow-lg">
+                    <div className="sticky bottom-0 bg-white border-t border-gray-200 py-4 px-6 shadow-lg">
                         <button
                             onClick={handleReservarClick}
-                            className="bg-blue-700 cursor-pointer text-white rounded-full w-md p-3"
+                            className="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-4 rounded-lg transition-colors"
                         >
-                            Métodos de Pago
+                            Continuar con el pago
                         </button>
                     </div>
                 )}

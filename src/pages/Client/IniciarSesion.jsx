@@ -192,7 +192,7 @@ function IniciarSesion() {
           </div>
 
           {/* Enlace para registrarse */}
-          <Link to="/registrarse" className="mb-4">
+          <Link to="/" className="mb-4">
             <p className="text-blue-600 underline">¿No tienes una cuenta todavía?</p>
           </Link>
 

@@ -61,6 +61,7 @@ function Principal() {
 
                 if (responseReservas.ok) {
                     const dataReservas = await responseReservas.json();
+
                     setReservas(dataReservas);
                 } else {
                     setReservas([]);

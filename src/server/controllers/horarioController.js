@@ -27,7 +27,7 @@ export const obtenerHorariosDisponibles = async (req, res) => {
 
         // Generar horarios disponibles (de 8:00 AM a 10:00 PM, bloques de 1 hora)
         const horariosDisponibles = [];
-        const horaInicio = 8; // 8:00 AM
+        const horaInicio = 7; // 8:00 AM
         const horaFin = 22; // 10:00 PM (último bloque: 10:00 PM - 11:00 PM)
 
         // Obtener la hora actual en la zona horaria de Venezuela
