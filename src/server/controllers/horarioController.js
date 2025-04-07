@@ -12,8 +12,8 @@ import moment from 'moment-timezone';  // Si decides usar moment-timezone
 export const obtenerHorariosDisponibles = async (req, res) => {
     const { cancha_id, fecha } = req.query;
 
-    console.log("cancha_id:", cancha_id); // Depuración
-    console.log("fecha:", fecha); // Depuración
+    console.log("cancha_id:", cancha_id);
+    console.log("fecha:", fecha);
 
     try {
         // Obtener los horarios ocupados para la cancha y fecha específicas
@@ -23,21 +23,27 @@ export const obtenerHorariosDisponibles = async (req, res) => {
             [cancha_id, fecha]
         );
 
-        console.log("horariosOcupados:", horariosOcupados); // Depuración
+        console.log("horariosOcupados:", horariosOcupados);
 
         // Generar horarios disponibles (de 8:00 AM a 10:00 PM, bloques de 1 hora)
         const horariosDisponibles = [];
-        const horaInicio = 7; // 8:00 AM
-        const horaFin = 22; // 10:00 PM (último bloque: 10:00 PM - 11:00 PM)
+        const horaInicio = 8;  // 8:00 AM
+        const horaFin = 22;    // 10:00 PM (último bloque: 10:00 PM - 11:00 PM)
 
-        // Obtener la hora actual en la zona horaria de Venezuela
-        const horaActual = moment().tz("America/Caracas").format("HH:mm:ss"); // Hora actual en Venezuela
+        // Obtener la fecha y hora actual en la zona horaria de Venezuela
+        const ahoraVenezuela = moment().tz("America/Caracas");
+        const fechaActual = ahoraVenezuela.format("YYYY-MM-DD");
+        const horaActual = ahoraVenezuela.format("HH:mm:ss");
 
-        console.log("horaActual:", horaActual); // Depuración
+        console.log("fechaActual:", fechaActual);
+        console.log("horaActual:", horaActual);
 
         for (let hora = horaInicio; hora <= horaFin; hora++) {
-            const horaInicioHorario = `${hora.toString().padStart(2, '0')}:00:00`; // Formato HH:MM:SS
-            const horaFinHorario = `${(hora + 1).toString().padStart(2, '0')}:00:00`; // Formato HH:MM:SS
+            const horaInicioHorario = `${hora.toString().padStart(2, '0')}:00:00`;
+            // Para el último horario (22:00:00), el end_time será 23:00:00
+            const horaFinHorario = hora === 22 
+                ? "23:00:00"
+                : `${(hora + 1).toString().padStart(2, '0')}:00:00`;
 
             // Verificar si el horario está ocupado
             const estaOcupado = horariosOcupados.some(
@@ -46,20 +52,30 @@ export const obtenerHorariosDisponibles = async (req, res) => {
                     horarioOcupado.end_time === horaFinHorario
             );
 
-            // Verificar si la hora ya pasó (comparamos con la hora actual en Venezuela)
-            if (!estaOcupado && horaInicioHorario > horaActual) {
-                horariosDisponibles.push({
-                    start_time: horaInicioHorario,
-                    end_time: horaFinHorario,
-                });
+            // Si es la fecha actual, verificar si la hora ya pasó
+            if (fecha === fechaActual) {
+                if (!estaOcupado && horaInicioHorario > horaActual) {
+                    horariosDisponibles.push({
+                        start_time: horaInicioHorario,
+                        end_time: horaFinHorario,
+                    });
+                }
+            } else {
+                // Para cualquier otra fecha, mostrar todos los horarios no ocupados
+                if (!estaOcupado) {
+                    horariosDisponibles.push({
+                        start_time: horaInicioHorario,
+                        end_time: horaFinHorario,
+                    });
+                }
             }
         }
 
-        console.log("horariosDisponibles:", horariosDisponibles); // Depuración
+        console.log("horariosDisponibles:", horariosDisponibles);
 
         res.json(horariosDisponibles);
     } catch (error) {
-        console.error("Error en obtenerHorariosDisponibles:", error); // Depuración
+        console.error("Error en obtenerHorariosDisponibles:", error);
         res.status(500).json({ message: "Error al obtener los horarios", error });
     }
 };

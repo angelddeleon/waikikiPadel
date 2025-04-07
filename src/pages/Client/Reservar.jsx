@@ -32,23 +32,30 @@ function Reservar() {
         const fetchCanchaYHorarios = async () => {
             try {
                 setLoading(true);
-                const responseCancha = await fetch(`http://localhost:3000/api/canchas/${canchaId}`);
-                if (!responseCancha.ok) {
-                    throw new Error("Error al obtener la cancha");
+                const [responseCancha, responseHorarios] = await Promise.all([
+                    fetch(`http://localhost:3000/api/canchas/${canchaId}`),
+                    fetch(`http://localhost:3000/api/horarios/disponibles?cancha_id=${canchaId}&fecha=${fechaSeleccionada}`)
+                ]);
+
+                if (!responseCancha.ok || !responseHorarios.ok) {
+                    throw new Error("Error al obtener los datos");
                 }
-                const dataCancha = await responseCancha.json();
 
-                const responseHorarios = await fetch(
-                    `http://localhost:3000/api/horarios/disponibles?cancha_id=${canchaId}&fecha=${fechaSeleccionada}`
-                );
-                if (!responseHorarios.ok) {
-                    throw new Error("Error al obtener los horarios");
-                }
-                const dataHorarios = await responseHorarios.json();
+                const [dataCancha, dataHorarios] = await Promise.all([
+                    responseCancha.json(),
+                    responseHorarios.json()
+                ]);
 
-                const canchaConHorarios = { ...dataCancha, horarios: dataHorarios };
+                // Ensure price_per_hour is a valid number
+                const precioValidado = !isNaN(Number(dataCancha.price_per_hour)) 
+                    ? Number(dataCancha.price_per_hour) 
+                    : 0;
 
-                setCancha(canchaConHorarios);
+                setCancha({ 
+                    ...dataCancha, 
+                    price_per_hour: precioValidado,
+                    horarios: dataHorarios 
+                });
                 setError(null);
             } catch (error) {
                 setError(error.message);
@@ -97,7 +104,8 @@ function Reservar() {
         );
     };
 
-    const precioPorHora = cancha?.price_per_hour || 0;
+    // Safe calculation of price and total
+    const precioPorHora = cancha?.price_per_hour ? Number(cancha.price_per_hour) : 0;
     const montoTotal = horasSeleccionadas.length * precioPorHora;
 
     const navigate = useNavigate();
