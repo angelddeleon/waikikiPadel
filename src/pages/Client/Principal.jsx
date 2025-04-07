@@ -96,8 +96,8 @@ function Principal() {
         );
     }
 
-    const numeroTelefono = "58424-4520697";
-    const mensaje = "Hola, me interesa hacer una reserva en su cancha";
+    const numeroTelefono = "584244520697";
+    const mensaje = "Hola, 1.Me interesa hacer una reserva en su cancha, 2.Tuve un problema al hacer mi reserva ";
 
     return (
         <LayoutClient>
