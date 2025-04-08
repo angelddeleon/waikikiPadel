@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router";
+import { Link } from "react-router"; // Corregido de 'react-router' a 'react-router-dom'
 import LayoutClient from "../../layout/LayoutClient.jsx";
 import CardCancha from "../../components/CardCancha.jsx";
 import CardCanchaReservada from "../../components/CardCanchaReservada.jsx";
@@ -38,8 +38,6 @@ function Principal() {
                 setCanchas(canchasConHorarios);
             } catch (error) {
                 setError(error.message);
-            } finally {
-                setLoading(false);
             }
         };
     
@@ -61,7 +59,6 @@ function Principal() {
 
                 if (responseReservas.ok) {
                     const dataReservas = await responseReservas.json();
-
                     setReservas(dataReservas);
                 } else {
                     setReservas([]);
@@ -102,7 +99,7 @@ function Principal() {
     return (
         <LayoutClient>
             <div className="px-4">
-                {/* Sección de Mis Reservaciones - Con scroll horizontal funcional */}
+                {/* Sección de Mis Reservaciones */}
                 <div className="py-4">
                     <h1 className="text-2xl md:text-3xl font-bold text-blue-950 mb-4">Mis Reservaciones</h1>
                     
@@ -127,7 +124,7 @@ function Principal() {
                                         <CardCanchaReservada
                                             name={reserva.cancha_name}
                                             status={reserva.status}
-                                            fecha={reserva.date}
+                                            fecha={reserva.fecha_reserva} // Usamos fecha_reserva directamente
                                             start_time={reserva.start_time}
                                             end_time={reserva.end_time}
                                         />

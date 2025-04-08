@@ -1,9 +1,6 @@
 import {
     getReservas,
     getReservaById,
-    getReservasPorUsuario,
-    updateReservaStatus,
-    deleteReserva,
 } from "../models/Reserva.js";
 import pool from "../config/db.js";
 import multer from 'multer';
@@ -172,26 +169,7 @@ export const obtenerReservaPorId = async (req, res) => {
     }
 };
 
-// Actualizar el estado de una reserva
-export const actualizarEstadoReserva = async (req, res) => {
-    try {
-        const { status } = req.body;
-        await updateReservaStatus(req.params.id, status);
-        res.status(200).json({ message: "Estado de la reserva actualizado" });
-    } catch (error) {
-        res.status(500).json({ message: "Error al actualizar el estado de la reserva", error });
-    }
-};
 
-// Eliminar una reserva
-export const eliminarReserva = async (req, res) => {
-    try {
-        await deleteReserva(req.params.id);
-        res.status(200).json({ message: "Reserva eliminada" });
-    } catch (error) {
-        res.status(500).json({ message: "Error al eliminar la reserva", error });
-    }
-};
 
 // Función para obtener las reservas de un usuario organizadas
 export const obtenerReservasUsuario = async (req, res) => {

@@ -20,13 +20,3 @@ export const getPagoById = async (id) => {
     const [rows] = await pool.query("SELECT * FROM pagos WHERE id = ?", [id]);
     return rows[0];
 };
-
-// Actualizar el estado de un pago
-export const updatePagoStatus = async (id, paymentStatus) => {
-    await pool.query("UPDATE pagos SET payment_status = ? WHERE id = ?", [paymentStatus, id]);
-};
-
-// Eliminar un pago
-export const deletePago = async (id) => {
-    await pool.query("DELETE FROM pagos WHERE id = ?", [id]);
-};

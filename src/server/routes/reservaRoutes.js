@@ -3,9 +3,7 @@ import {
     crearReserva, // Nueva función
     obtenerReservas,
     obtenerReservaPorId,
-    actualizarEstadoReserva,
     obtenerReservasUsuario,
-    eliminarReserva,
     uploadImage
 } from "../controllers/reservaController.js";
 import verifyToken from "../middleware/verifyToken.js";
@@ -19,8 +17,7 @@ router.post("/", verifyToken, crearReserva);
 router.post("/ImageCom", uploadImage); 
 router.get("/", obtenerReservas);
 router.get("/:id", obtenerReservaPorId);
-router.put("/:id", actualizarEstadoReserva);
-router.delete("/:id", eliminarReserva);
+
 // En reservaRoutes.js
 router.get("/usuario/:id", verifyTokenReserva, obtenerReservasUsuario);
 

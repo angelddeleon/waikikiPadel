@@ -3,8 +3,6 @@ import {
     obtenerCanchas,
     crearCancha,
     obtenerCanchaPorId,
-    actualizarCancha,
-    eliminarCancha,
 } from "../controllers/canchaController.js";
 
 const router = express.Router();
@@ -13,7 +11,6 @@ const router = express.Router();
 router.get("/", obtenerCanchas);
 router.post("/", crearCancha);
 router.get("/:id", obtenerCanchaPorId);
-router.put("/:id", actualizarCancha);
-router.delete("/:id", eliminarCancha);
+
 
 export default router;

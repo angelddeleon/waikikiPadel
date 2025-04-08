@@ -2,9 +2,7 @@ import express from "express";
 import {
     crearPago,
     obtenerPagos,
-    obtenerPagoPorId,
-    actualizarEstadoPago,
-    eliminarPago,
+    obtenerPagoPorId
 } from "../controllers/pagoController.js";
 
 const router = express.Router();
@@ -13,7 +11,5 @@ const router = express.Router();
 router.post("/", crearPago);
 router.get("/", obtenerPagos);
 router.get("/:id", obtenerPagoPorId);
-router.put("/:id/estado", actualizarEstadoPago);
-router.delete("/:id", eliminarPago);
 
 export default router;

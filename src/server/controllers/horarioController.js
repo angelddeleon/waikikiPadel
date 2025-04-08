@@ -3,7 +3,6 @@ import {
     createHorario,
     getHorarioById,
     updateHorarioEstado,
-    deleteHorario,
 } from "../models/Horario.js";
 import pool from "../config/db.js";
 import moment from 'moment-timezone';  // Si decides usar moment-timezone
@@ -127,12 +126,3 @@ export const actualizarEstadoHorario = async (req, res) => {
     }
 };
 
-// Eliminar un horario
-export const eliminarHorario = async (req, res) => {
-    try {
-        await deleteHorario(req.params.id);
-        res.status(200).json({ message: "Horario eliminado" });
-    } catch (error) {
-        res.status(500).json({ message: "Error al eliminar el horario", error });
-    }
-};

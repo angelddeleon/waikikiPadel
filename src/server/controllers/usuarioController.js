@@ -1,11 +1,7 @@
 import {
   createUsuario,
   findByEmail,
-  getUsuarios,
-  deleteUsuario,
-  toggleBlockUsuario,
   findById,
-
 } from '../models/Usuario.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -238,38 +234,6 @@ export const login = async (req, res) => {
   }
 };
 
-
-export const obtenerUsuarios = async (req, res) => {
-  try {
-    const usuarios = await getUsuarios();
-    res.json(usuarios);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
-
-export const eliminarUsuario = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    await deleteUsuario(id);
-    res.json({ message: 'Usuario eliminado exitosamente' });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
-
-export const bloquearUsuario = async (req, res) => {
-  const { id } = req.params;
-  const { isBlocked } = req.body;
-
-  try {
-    await toggleBlockUsuario(id, isBlocked);
-    res.json({ message: `Usuario ${isBlocked ? 'bloqueado' : 'desbloqueado'} exitosamente` });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
 
 export const logout = (req, res) => {
   try {

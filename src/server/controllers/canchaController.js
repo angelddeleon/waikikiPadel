@@ -2,8 +2,7 @@ import {
     getCanchas,
     createCancha,
     getCanchaById,
-    updateCancha,
-    deleteCancha,
+
 } from "../models/Cancha.js";
 
 // Obtener todas las canchas
@@ -40,23 +39,3 @@ export const obtenerCanchaPorId = async (req, res) => {
     }
 };
 
-// Actualizar una cancha
-export const actualizarCancha = async (req, res) => {
-    try {
-        const { name, image, pricePerHour } = req.body;
-        await updateCancha(req.params.id, name, image, pricePerHour);
-        res.status(200).json({ message: "Cancha actualizada" });
-    } catch (error) {
-        res.status(500).json({ message: "Error al actualizar la cancha", error });
-    }
-};
-
-// Eliminar una cancha
-export const eliminarCancha = async (req, res) => {
-    try {
-        await deleteCancha(req.params.id);
-        res.status(200).json({ message: "Cancha eliminada" });
-    } catch (error) {
-        res.status(500).json({ message: "Error al eliminar la cancha", error });
-    }
-};

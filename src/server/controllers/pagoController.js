@@ -2,8 +2,6 @@ import {
     createPago,
     getPagos,
     getPagoById,
-    updatePagoStatus,
-    deletePago,
 } from "../models/Pago.js";
 
 // Crear un nuevo pago
@@ -51,23 +49,3 @@ export const obtenerPagoPorId = async (req, res) => {
     }
 };
 
-// Actualizar el estado de un pago
-export const actualizarEstadoPago = async (req, res) => {
-    try {
-        const { paymentStatus } = req.body;
-        await updatePagoStatus(req.params.id, paymentStatus);
-        res.status(200).json({ message: "Estado del pago actualizado" });
-    } catch (error) {
-        res.status(500).json({ message: "Error al actualizar el estado del pago", error });
-    }
-};
-
-// Eliminar un pago
-export const eliminarPago = async (req, res) => {
-    try {
-        await deletePago(req.params.id);
-        res.status(200).json({ message: "Pago eliminado" });
-    } catch (error) {
-        res.status(500).json({ message: "Error al eliminar el pago", error });
-    }
-};

@@ -70,7 +70,7 @@ const HeaderClient = () => {
                             <span>Iniciar sesión</span>
                         </Link>
                         <Link 
-                            to="/registrarse" 
+                            to="/" 
                             className="flex items-center cursor-pointer space-x-1 text-white"
                         >
                             <span>Registrarse</span>

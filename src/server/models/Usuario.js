@@ -53,20 +53,8 @@ export const findByEmail = async (email) => {
 };
 
 
-export const getUsuarios = async () => {
-  const query = 'SELECT * FROM usuarios';
-  const [rows] = await pool.query(query);
-  return rows;
-};
 
-export const deleteUsuario = async (id) => {
-  await pool.query('DELETE FROM usuarios WHERE id = ?', [id]);
-};
 
-export const toggleBlockUsuario = async (id, isBlocked) => {
-  const query = 'UPDATE usuarios SET isBlocked = ? WHERE id = ?';
-  await pool.query(query, [isBlocked, id]);
-};
 
 export const findById = async (id) => {
   const query = 'SELECT * FROM usuarios WHERE id = ?';

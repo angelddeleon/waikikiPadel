@@ -21,15 +21,3 @@ export const getCanchaById = async (id) => {
     return rows[0];
 };
 
-// Actualizar una cancha
-export const updateCancha = async (id, name, image, pricePerHour) => {
-    await pool.query(
-        "UPDATE canchas SET name = ?, image = ?, price_per_hour = ? WHERE id = ?",
-        [name, image, pricePerHour, id]
-    );
-};
-
-// Eliminar una cancha
-export const deleteCancha = async (id) => {
-    await pool.query("DELETE FROM canchas WHERE id = ?", [id]);
-};
