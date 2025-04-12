@@ -1,9 +1,9 @@
-import express from "express";
-import {
+const express = require("express");
+const {
     crearPago,
     obtenerPagos,
     obtenerPagoPorId
-} from "../controllers/pagoController.js";
+} = require("../controllers/pagoController");
 
 const router = express.Router();
 
@@ -12,4 +12,4 @@ router.post("/", crearPago);
 router.get("/", obtenerPagos);
 router.get("/:id", obtenerPagoPorId);
 
-export default router;
+module.exports = router;

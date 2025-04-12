@@ -1,10 +1,10 @@
-import express from "express";
-import {
+const express = require("express");
+const {
     obtenerHorariosDisponibles,
     crearHorario,
     obtenerHorarioPorId,
     actualizarEstadoHorario
-} from "../controllers/horarioController.js";
+} = require("../controllers/horarioController");
 
 const router = express.Router();
 
@@ -14,4 +14,4 @@ router.post("/", crearHorario);
 router.get("/:id", obtenerHorarioPorId);
 router.put("/:id/estado", actualizarEstadoHorario);
 
-export default router;
+module.exports = router;

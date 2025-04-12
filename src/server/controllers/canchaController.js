@@ -1,12 +1,10 @@
-import {
+const {
     getCanchas,
     createCancha,
     getCanchaById,
+} = require("../models/Cancha");
 
-} from "../models/Cancha.js";
-
-// Obtener todas las canchas
-export const obtenerCanchas = async (req, res) => {
+exports.obtenerCanchas = async (req, res) => {
     try {
         const canchas = await getCanchas();
         res.status(200).json(canchas);
@@ -15,8 +13,7 @@ export const obtenerCanchas = async (req, res) => {
     }
 };
 
-// Crear una nueva cancha
-export const crearCancha = async (req, res) => {
+exports.crearCancha = async (req, res) => {
     try {
         const { name, image, pricePerHour } = req.body;
         const id = await createCancha(name, image, pricePerHour);
@@ -26,8 +23,7 @@ export const crearCancha = async (req, res) => {
     }
 };
 
-// Obtener una cancha por ID
-export const obtenerCanchaPorId = async (req, res) => {
+exports.obtenerCanchaPorId = async (req, res) => {
     try {
         const cancha = await getCanchaById(req.params.id);
         if (!cancha) {
@@ -38,4 +34,3 @@ export const obtenerCanchaPorId = async (req, res) => {
         res.status(500).json({ message: "Error al obtener la cancha", error });
     }
 };
-

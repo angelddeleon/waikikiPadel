@@ -1,26 +1,23 @@
-import multer from 'multer';
-import fs from 'fs';
-import path from 'path';
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 
-// Configuración de Multer para subir los comprobantes de pago
 const uploadComprobante = multer.diskStorage({
     destination: (req, file, cb) => {
-        const comprobantePath = './uploads/comprobantes/';  // Carpeta donde se guardarán los comprobantes
+        const comprobantePath = './uploads/comprobantes/';
         if (!fs.existsSync(comprobantePath)) {
-            fs.mkdirSync(comprobantePath, { recursive: true }); // Crear la carpeta si no existe
+            fs.mkdirSync(comprobantePath, { recursive: true });
         }
-        cb(null, comprobantePath); // Especificamos la carpeta de destino
+        cb(null, comprobantePath);
     },
     filename: (req, file, cb) => {
-        // Asignar un nombre único al archivo usando la fecha actual
         cb(null, `${Date.now()}${path.extname(file.originalname)}`);
     }
 });
 
-// Configuramos el tamaño máximo de los archivos
 const upload = multer({
     storage: uploadComprobante,
-    limits: { fileSize: 10 * 1024 * 1024 },  // Establece el límite de tamaño de archivo a 10MB
+    limits: { fileSize: 10 * 1024 * 1024 },
 }).single("comprobante");
 
-export default upload;
+module.exports = upload;

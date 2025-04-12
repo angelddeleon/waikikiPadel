@@ -1,14 +1,13 @@
-import express from "express";
-import {
-    crearReserva, // Nueva función
+const express = require("express");
+const {
+    crearReserva,
     obtenerReservas,
     obtenerReservaPorId,
     obtenerReservasUsuario,
     uploadImage
-} from "../controllers/reservaController.js";
-import verifyToken from "../middleware/verifyToken.js";
-import verifyTokenReserva from "../middleware/verifyTokenReserva.js";
-
+} = require("../controllers/reservaController");
+const verifyToken = require("../middleware/verifyToken");
+const verifyTokenReserva = require("../middleware/verifyTokenReserva");
 
 const router = express.Router();
 
@@ -17,10 +16,6 @@ router.post("/", verifyToken, crearReserva);
 router.post("/ImageCom", uploadImage); 
 router.get("/", obtenerReservas);
 router.get("/:id", obtenerReservaPorId);
-
-// En reservaRoutes.js
 router.get("/usuario/:id", verifyTokenReserva, obtenerReservasUsuario);
 
-
-
-export default router;
+module.exports = router;

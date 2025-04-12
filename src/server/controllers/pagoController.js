@@ -1,11 +1,10 @@
-import {
+const {
     createPago,
     getPagos,
     getPagoById,
-} from "../models/Pago.js";
+} = require("../models/Pago");
 
-// Crear un nuevo pago
-export const crearPago = async (req, res) => {
+exports.crearPago = async (req, res) => {
     try {
         const { userId, reservaId, amount, paymentMethod, paymentProof, paymentStatus } = req.body;
         const id = await createPago(userId, reservaId, amount, paymentMethod, paymentProof, paymentStatus);
@@ -15,18 +14,16 @@ export const crearPago = async (req, res) => {
     }
 };
 
-// Obtener todos los pagos
-export const obtenerPagos = async (req, res) => {
+exports.obtenerPagos = async (req, res) => {
     try {
         const pagos = await getPagos();
 
-        // Mapear los pagos para incluir la URL del comprobante de pago
         const pagosConUrl = pagos.map(pago => {
             return {
                 ...pago,
                 paymentProof: pago.paymentProof 
                     ? `http://localhost:3000/uploads/comprobante/${pago.paymentProof}` 
-                    : null // Asignar null si no hay comprobante
+                    : null
             };
         });
 
@@ -36,8 +33,7 @@ export const obtenerPagos = async (req, res) => {
     }
 };
 
-// Obtener un pago por ID
-export const obtenerPagoPorId = async (req, res) => {
+exports.obtenerPagoPorId = async (req, res) => {
     try {
         const pago = await getPagoById(req.params.id);
         if (!pago) {
@@ -48,4 +44,3 @@ export const obtenerPagoPorId = async (req, res) => {
         res.status(500).json({ message: "Error al obtener el pago", error });
     }
 };
-
