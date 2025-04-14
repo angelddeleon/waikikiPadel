@@ -15,7 +15,7 @@ function Principal() {
     useEffect(() => {
         const fetchCanchasYHorarios = async () => {
             try {
-                const responseCanchas = await fetch("http://localhost:3000/api/canchas");
+                const responseCanchas = await fetch("https://backend.waikikipadel.com/api/canchas");
                 if (!responseCanchas.ok) {
                     throw new Error("Error al obtener las canchas");
                 }
@@ -25,7 +25,7 @@ function Principal() {
                     dataCanchas.map(async (cancha) => {
                         const fechaActual = new Date().toISOString().split("T")[0];
                         const responseHorarios = await fetch(
-                            `http://localhost:3000/api/horarios/disponibles?cancha_id=${cancha.id}&fecha=${fechaActual}`
+                            `https://backend.waikikipadel.com/api/horarios/disponibles?cancha_id=${cancha.id}&fecha=${fechaActual}`
                         );
                         if (!responseHorarios.ok) {
                             throw new Error("Error al obtener los horarios");
@@ -49,7 +49,7 @@ function Principal() {
         const fetchReservas = async () => {
             try {
                 const id = 0; // Reemplazar con ID de usuario real
-                const responseReservas = await fetch(`http://localhost:3000/api/reservas/usuario/${id}`, {
+                const responseReservas = await fetch(`https://backend.waikikipadel.com/api/reservas/usuario/${id}`, {
                     method: 'GET',
                     credentials: 'include',
                     headers: {

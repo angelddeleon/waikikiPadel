@@ -13,7 +13,7 @@ const SidebarClient = () => {
     useEffect(() => {
         const checkToken = async () => {
             try {
-                const response = await fetch('http://localhost:3000/api/usuarios/verificarToken', {
+                const response = await fetch('https://backend.waikikipadel.com/api/usuarios/verificarToken', {
                     method: 'GET',
                     credentials: 'include', 
                 });
@@ -37,7 +37,7 @@ const SidebarClient = () => {
         try {
             setLoading(true);
 
-            const response = await fetch('http://localhost:3000/api/usuarios/logout', {
+            const response = await fetch('https://backend.waikikipadel.com/api/usuarios/logout', {
                 method: 'POST',
                 credentials: 'include',
             });

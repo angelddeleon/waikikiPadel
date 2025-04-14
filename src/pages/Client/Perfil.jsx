@@ -11,7 +11,7 @@ function Perfil() {
     const fetchPerfil = async () => {
       try {
         const id = 0; // Aquí debes poner el id correcto, puede venir de un estado global o autenticación
-        const response = await fetch(`http://localhost:3000/api/usuarios/perfil/${id}`, {
+        const response = await fetch(`https://backend.waikikipadel.com/api/usuarios/perfil/${id}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

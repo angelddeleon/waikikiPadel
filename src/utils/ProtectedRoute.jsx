@@ -11,7 +11,7 @@ const ProtectedRoute = ({ children }) => {
     useEffect(() => {
         const checkTokenValidity = async () => {
             try {
-                const response = await fetch('http://localhost:3000/api/usuarios/verificarToken', {
+                const response = await fetch('https://backend.waikikipadel.com/api/usuarios/verificarToken', {
                     method: 'GET',
                     credentials: 'include', 
                     headers: {

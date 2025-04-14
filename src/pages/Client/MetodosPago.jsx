@@ -48,7 +48,7 @@ function MetodosPago() {
         const fetchCancha = async () => {
             try {
                 setLoading(true);
-                const res = await fetch(`http://localhost:3000/api/canchas/${canchaId}`);
+                const res = await fetch(`https://backend.waikikipadel.com/api/canchas/${canchaId}`);
                 if (!res.ok) throw new Error("Error al obtener cancha");
                 setCancha(await res.json());
             } catch (err) {
@@ -112,7 +112,7 @@ function MetodosPago() {
                 const formData = new FormData();
                 formData.append("comprobante", file);
                 
-                const uploadRes = await fetch('http://localhost:3000/api/upload-comprobante', {
+                const uploadRes = await fetch('https://backend.waikikipadel.com/api/upload-comprobante', {
                     method: 'POST',
                     credentials: 'include',
                     body: formData
@@ -133,7 +133,7 @@ function MetodosPago() {
                 };
             });
 
-            const reservaRes = await fetch('http://localhost:3000/api/reservas', {
+            const reservaRes = await fetch('https://backend.waikikipadel.com/api/reservas', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
