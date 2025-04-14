@@ -57,7 +57,7 @@ const SidebarClient = () => {
     return (
         <div className="h-full flex flex-col bg-white">
             {/* Logo */}
-            <Link to="/">
+            <Link to="/registrarse">
                 <img className="w-full" src={logo} alt="logo" />
             </Link>
 
@@ -74,7 +74,7 @@ const SidebarClient = () => {
                     </li>
                     {/* Botón de Registrarse */}
                     <li className="w-full">
-                        <Link to="/">
+                        <Link to="/registrarse">
                             <button className="block w-full py-2 text-center hover:bg-gray-600/50 hover:text-white rounded transition-colors">
                                 Registrarse
                             </button>

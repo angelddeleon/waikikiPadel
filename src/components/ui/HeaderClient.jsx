@@ -47,7 +47,7 @@ const HeaderClient = () => {
 
     return (
         <header className="bg-blue-950 w-full flex justify-between items-center p-4 shadow-lg z-50">
-            <Link to="/principal" className="flex items-center">
+            <Link to="/" className="flex items-center">
                 <img src={logo} alt="logo" className="w-20 max-w-full" />
             </Link>
 
@@ -70,7 +70,7 @@ const HeaderClient = () => {
                             <span>Iniciar sesión</span>
                         </Link>
                         <Link 
-                            to="/" 
+                            to="/registrarse" 
                             className="flex items-center cursor-pointer space-x-1 text-white"
                         >
                             <span>Registrarse</span>

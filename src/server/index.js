@@ -55,8 +55,8 @@ app.use(cookieParser());
 // Configuración de CORS mejorada
 const corsOptions = {
   origin: [
-    'http://localhost:5173', 
-    'http://127.0.0.1:5173',
+    'https//prueba.waikikipadel.com/', 
+    'http://prueba2.waikikipadel.com/',
     // Agrega aquí el dominio de tu aplicación Flask
   ],
   credentials: true,

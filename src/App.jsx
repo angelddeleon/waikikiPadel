@@ -14,13 +14,13 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path='/principal' element={<Principal />} />
+        <Route path='/' element={<Principal />} />
         <Route path='/canchasdispo' element={<CanchasC />} />
         <Route path='/perfil' element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
         <Route path='/reservar' element={<ProtectedRoute><Reservar /></ProtectedRoute>} />
         <Route path='/metodospago' element={<ProtectedRoute><MetodosPago /></ProtectedRoute>} />
         <Route path='/iniciarsesion' element={<IniciarSesion />} />
-        <Route path='/' element={<Regitrarse />} />
+        <Route path='/registrarse' element={<Regitrarse />} />
       </Routes>
     </BrowserRouter>
   );
