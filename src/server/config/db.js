@@ -1,27 +1,27 @@
-import mysql from "mysql2/promise";
+const mysql = require("mysql2/promise");
 
 const pool = mysql.createPool({
     host: "localhost",
     user: "waikikip_admin",
-    password: "*Qe0_$Z%XwIY" ,
+    password: "K(ivE][]T1{b",
     database: "waikikip_waikiki",
     waitForConnections: true,
     connectionLimit: 50,
     queueLimit: 0,
 });
 
-export default pool;
+module.exports = pool;
 
 /**
- const pool = mysql.createPool({
+const pool = mysql.createPool({
     host: "localhost",
     user: "root",
-    password: "#Lo28de06" ,
+    password: "#Lo28de06",
     database: "waikiki",
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
 });
 
-export default pool; 
- */
+module.exports = pool;
+*/

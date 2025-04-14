@@ -1,9 +1,9 @@
-import express from "express";
-import {
+const express = require("express");
+const {
     obtenerCanchas,
     crearCancha,
     obtenerCanchaPorId,
-} from "../controllers/canchaController.js";
+} = require("../controllers/canchaController");
 
 const router = express.Router();
 
@@ -12,5 +12,4 @@ router.get("/", obtenerCanchas);
 router.post("/", crearCancha);
 router.get("/:id", obtenerCanchaPorId);
 
-
-export default router;
+module.exports = router;

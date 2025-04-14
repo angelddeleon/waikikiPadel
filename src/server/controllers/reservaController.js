@@ -1,15 +1,10 @@
-import {
+const {
     getReservas,
     getReservaById,
-} from "../models/Reserva.js";
-import pool from "../config/db.js";
-import multer from 'multer';
-import path from 'path';
-
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+} = require("../models/Reserva");
+const pool = require("../config/db");
+const multer = require('multer');
+const path = require('path');
 
 // Configuración de Multer para comprobantes
 const comprobanteDir = path.join(__dirname, '../../uploads/comprobante');
@@ -24,7 +19,7 @@ const comprobanteStorage = multer.diskStorage({
   }
 });
 
-export const uploadImage = multer({
+exports.uploadImage = multer({
   storage: comprobanteStorage,
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
@@ -39,7 +34,7 @@ export const uploadImage = multer({
   }
 }).single('image');
 
-export const crearReserva = async (req, res) => {
+exports.crearReserva = async (req, res) => {
     const user_id = req.user?.userId;
     
     if (!user_id) {
@@ -51,7 +46,6 @@ export const crearReserva = async (req, res) => {
 
     const { cancha_id, fecha, horarios, monto, metodoPago, nombreImg } = req.body;
 
-    // Validaciones básicas
     if (!cancha_id || !fecha || !horarios || !monto || !metodoPago) {
         return res.status(400).json({ 
             success: false,
@@ -63,7 +57,6 @@ export const crearReserva = async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        // Verificar disponibilidad de horarios
         for (const horario of horarios) {
             const { start_time, end_time } = horario;
             
@@ -86,7 +79,6 @@ export const crearReserva = async (req, res) => {
             }
         }
 
-        // Obtener tasa
         const [tasa] = await connection.query(`SELECT monto FROM tasa WHERE id = 1`);
         if (tasa.length === 0) {
             await connection.rollback();
@@ -96,7 +88,6 @@ export const crearReserva = async (req, res) => {
             });
         }
 
-        // Crear pago
         const [pago] = await connection.query(
             `INSERT INTO pagos 
             (user_id, amount, payment_method, payment_proof, payment_status, tasa_valor) 
@@ -105,7 +96,6 @@ export const crearReserva = async (req, res) => {
         );
         const pago_id = pago.insertId;
 
-        // Crear horarios y reservas
         for (const horario of horarios) {
             const { start_time, end_time } = horario;
 
@@ -146,8 +136,7 @@ export const crearReserva = async (req, res) => {
     }
 };
 
-// Obtener todas las reservas
-export const obtenerReservas = async (req, res) => {
+exports.obtenerReservas = async (req, res) => {
     try {
         const reservas = await getReservas();
         res.status(200).json(reservas);
@@ -156,8 +145,7 @@ export const obtenerReservas = async (req, res) => {
     }
 };
 
-// Obtener una reserva por ID
-export const obtenerReservaPorId = async (req, res) => {
+exports.obtenerReservaPorId = async (req, res) => {
     try {
         const reserva = await getReservaById(req.params.id);
         if (!reserva) {
@@ -169,14 +157,10 @@ export const obtenerReservaPorId = async (req, res) => {
     }
 };
 
-
-
-// Función para obtener las reservas de un usuario organizadas
-export const obtenerReservasUsuario = async (req, res) => {
+exports.obtenerReservasUsuario = async (req, res) => {
     try {
         const user_id = req.user.userId;
 
-        // Consulta SQL mejorada con ordenamiento y filtrado
         const [reservas] = await pool.query(`
             SELECT 
                 r.id,
@@ -199,17 +183,15 @@ export const obtenerReservasUsuario = async (req, res) => {
             LEFT JOIN pagos p ON r.pago_id = p.id
             WHERE r.user_id = ?
             AND (
-                -- Solo reservaciones futuras o de hoy que no hayan terminado
                 (h.date > CURDATE()) OR 
                 (h.date = CURDATE() AND h.end_time > CURTIME())
             )
             AND (
-                -- Excluir canceladas de días anteriores
                 NOT (r.status = 'cancelada' AND h.date < CURDATE())
             )
             ORDER BY 
-                h.date ASC,            -- Orden por fecha (hoy, luego mañana)
-                h.start_time ASC       -- Luego por hora de inicio
+                h.date ASC,
+                h.start_time ASC
         `, [user_id]);
 
         res.status(200).json(reservas);

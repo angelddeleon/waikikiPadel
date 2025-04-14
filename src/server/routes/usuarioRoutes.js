@@ -1,24 +1,22 @@
-import express from 'express';
-import {
+const express = require('express');
+const {
   crearUsuario,
   obtenerPerfil,
   login,
   verificaToken,
   logout,
-  uploadImage  // Importar la nueva función logout
-} from '../controllers/usuarioController.js';
-import verifyToken from "../middleware/verifyToken.js";
+  uploadImage
+} = require('../controllers/usuarioController');
+const verifyToken = require("../middleware/verifyToken");
 
 const router = express.Router();
 
 // Rutas para los usuarios
-router.post('/', crearUsuario); // Registrar usuario
-router.post('/uploadImage', uploadImage); // Registrar usuario
-router.post('/login', login); // Login de usuario
-router.post('/logout', logout); // Nueva ruta para cerrar sesión
-
-router.get('/verificarToken', verificaToken);  // Verificar si el token es válido
-
+router.post('/', crearUsuario);
+router.post('/uploadImage', uploadImage);
+router.post('/login', login);
+router.post('/logout', logout);
+router.get('/verificarToken', verificaToken);
 router.get('/perfil/:id', verifyToken, obtenerPerfil);
 
-export default router;
+module.exports = router;

@@ -1,14 +1,14 @@
-import {
+const {
   createUsuario,
   findByEmail,
   findById,
-} from '../models/Usuario.js';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import fs from 'fs';
-import multer from 'multer';
-import pool from '../config/db.js';
-import rateLimit from 'express-rate-limit';
+} = require('../models/Usuario');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const multer = require('multer');
+const pool = require('../config/db');
+const rateLimit = require('express-rate-limit');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -22,13 +22,13 @@ const storage = multer.diskStorage({
       });
   },
   filename: (req, file, cb) => {
-      cb(null, file.originalname); // Conserva el nombre original
+      cb(null, file.originalname);
   },
 });
 
 const upload = multer({ storage });
 
-export const uploadImage = (req, res) => {
+exports.uploadImage = (req, res) => {
   return new Promise((resolve, reject) => {
       upload.single('image')(req, res, (err) => {
           if (err) {
@@ -38,19 +38,15 @@ export const uploadImage = (req, res) => {
           if (!req.body) {
               return reject(new Error('No se proporcionó ninguna imagen'));
           }
-           // Usa el nombre original en tu lógica
-          resolve(req.body.image); // Retorna la ruta del archivo
+          resolve(req.body.image);
       });
   });
 };
 
-
-
-export const crearUsuario = async (req, res) => {
+exports.crearUsuario = async (req, res) => {
   try {
     const { nombre, email, telefono, password, codigoPais, role = 'usuario' } = req.body;
 
-    // Validaciones mejoradas
     if (!nombre || !email || !telefono || !password || !codigoPais) {
       return res.status(400).json({ 
         success: false,
@@ -59,7 +55,6 @@ export const crearUsuario = async (req, res) => {
       });
     }
 
-    // Verificar conexión a la base de datos primero
     try {
       await pool.query('SELECT 1');
     } catch (dbError) {
@@ -70,7 +65,6 @@ export const crearUsuario = async (req, res) => {
       });
     }
 
-    // Verificar si el email ya existe
     const [existingUser] = await pool.query('SELECT id FROM usuarios WHERE email = ?', [email]);
     if (existingUser.length > 0) {
       return res.status(409).json({ 
@@ -79,17 +73,14 @@ export const crearUsuario = async (req, res) => {
       });
     }
 
-    // Crear usuario
     const result = await createUsuario({ nombre, email, telefono, password, codigoPais, role });
 
-    // Generar token JWT
     const token = jwt.sign(
       { userId: result.insertId, role },
       process.env.JWT_SECRET || 'secreto',
       { expiresIn: '1h' }
     );
 
-    // Configurar cookie
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -98,7 +89,6 @@ export const crearUsuario = async (req, res) => {
       path: '/'
     });
 
-    // Respuesta exitosa
     return res.status(201).json({
       success: true,
       message: 'Usuario registrado exitosamente',
@@ -120,18 +110,16 @@ export const crearUsuario = async (req, res) => {
   }
 };
 
-// Configuración de límite de intentos
-export const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5, // límite de 5 intentos por IP
+exports.loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   message: 'Demasiados intentos de inicio de sesión desde esta IP, intente nuevamente más tarde',
   skipSuccessfulRequests: true
 });
 
-export const login = async (req, res) => {
+exports.login = async (req, res) => {
   const { email, password } = req.body;
 
-  // Validaciones básicas
   if (!email || !password) {
     return res.status(400).json({ 
       success: false,
@@ -140,7 +128,6 @@ export const login = async (req, res) => {
   }
 
   try {
-    // Validación de formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ 
@@ -149,16 +136,14 @@ export const login = async (req, res) => {
       });
     }
 
-    // Buscar el usuario
     const user = await findByEmail(email);
     if (!user) {
       return res.status(401).json({ 
         success: false,
-        error: 'Credenciales inválidas' // Mensaje genérico por seguridad
+        error: 'Credenciales inválidas'
       });
     }
 
-    // Verificar usuario bloqueado
     if (user.isBlocked) {
       return res.status(403).json({ 
         success: false,
@@ -166,7 +151,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // Verificar contraseña
     if (!user.password) {
       console.error(`Usuario ${email} no tiene contraseña en la base de datos`);
       return res.status(500).json({ 
@@ -175,19 +159,15 @@ export const login = async (req, res) => {
       });
     }
 
-    // Comparar contraseñas
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      // Registrar intento fallido (podrías guardar esto en la base de datos)
       console.warn(`Intento fallido de inicio de sesión para el usuario: ${email}`);
-      
       return res.status(401).json({ 
         success: false,
         error: 'Credenciales inválidas' 
       });
     }
 
-    // Generar token JWT
     const token = jwt.sign(
       { 
         userId: user.id, 
@@ -198,16 +178,14 @@ export const login = async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    // Configurar cookie segura
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 3600000, // 1 hora
+      maxAge: 3600000,
       path: '/'
     });
 
-    // Respuesta exitosa (sin enviar información sensible)
     res.json({
       success: true,
       message: 'Inicio de sesión exitoso',
@@ -234,8 +212,7 @@ export const login = async (req, res) => {
   }
 };
 
-
-export const logout = (req, res) => {
+exports.logout = (req, res) => {
   try {
     res.clearCookie('token', {
       httpOnly: true,
@@ -250,7 +227,7 @@ export const logout = (req, res) => {
   }
 };
 
-export const verificaToken = (req, res) => {
+exports.verificaToken = (req, res) => {
   const token = req.cookies.token;
 
   if (!token) {
@@ -267,8 +244,8 @@ export const verificaToken = (req, res) => {
   });
 };
 
-export const obtenerPerfil = async (req, res) => {
-  const userIdFromToken = req.user.userId; // ID del usuario en el token
+exports.obtenerPerfil = async (req, res) => {
+  const userIdFromToken = req.user.userId;
 
   try {
     const usuario = await findById(userIdFromToken);
@@ -277,15 +254,12 @@ export const obtenerPerfil = async (req, res) => {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    // Si existe la imagen del perfil, asigna la URL completa
     const imageUrl = usuario.profileImage 
       ? `http://localhost:3000/uploads/usuarios/${usuario.profileImage}` 
       : null;
 
-    // Excluir la contraseña antes de enviar la respuesta
     const { password, ...perfil } = usuario;
 
-    // Agregar la URL de la imagen al perfil
     res.json({ ...perfil, imageUrl });
   } catch (error) {
     res.status(500).json({ error: 'Hubo un error al obtener el perfil del usuario' });

@@ -1,14 +1,9 @@
-import express from 'express';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-
-// Configuración de paths
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const express = require('express');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -86,11 +81,11 @@ app.use('/uploads/comprobante', express.static(comprobanteDir, {
 }));
 
 // Importación de rutas
-import usuarioRoutes from "./routes/usuarioRoutes.js";
-import canchaRoutes from "./routes/canchaRoutes.js";
-import horarioRoutes from "./routes/horarioRoutes.js";
-import reservaRoutes from "./routes/reservaRoutes.js";
-import pagoRoutes from "./routes/pagoRoutes.js";
+const usuarioRoutes = require("./routes/usuarioRoutes");
+const canchaRoutes = require("./routes/canchaRoutes");
+const horarioRoutes = require("./routes/horarioRoutes");
+const reservaRoutes = require("./routes/reservaRoutes");
+const pagoRoutes = require("./routes/pagoRoutes");
 
 // Rutas de la API
 app.use("/api/usuarios", usuarioRoutes);
@@ -184,4 +179,4 @@ const server = app.listen(PORT, () => {
 process.on('SIGTERM', () => server.close());
 process.on('SIGINT', () => server.close());
 
-export default app;
+module.exports = app;
