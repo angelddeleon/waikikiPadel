@@ -109,7 +109,7 @@ function Registrarse() {
             };
 
             try {
-                const response = await fetch("https://backend.waikikipadel.com/api/usuarios", {
+                const response = await fetch("https://backend2node.waikikipadel.com/api/usuarios", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",

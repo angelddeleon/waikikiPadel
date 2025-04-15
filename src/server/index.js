@@ -55,11 +55,11 @@ app.use(cookieParser());
 // Configuración de CORS mejorada
 const corsOptions = {
   origin: [
-    'https//prueba.waikikipadel.com/', 
-    'http://prueba2.waikikipadel.com/',
-    // Agrega aquí el dominio de tu aplicación Flask
+    'https://prueba.waikikipadel.com', 
+    'https://prueba2.waikikipadel.com', 
+    'https://waikikipadel.com'
   ],
-  credentials: true,
+  credentials: true, // Permite compartir cookies entre dominios
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   exposedHeaders: ['Authorization', 'Set-Cookie']
@@ -118,7 +118,6 @@ app.get('/api/images/comprobante/:filename', (req, res) => {
   const { filename } = req.params;
   const filePath = path.join(comprobanteDir, filename);
   
-  // Verificar si el archivo existe
   fs.access(filePath, fs.constants.F_OK, (err) => {
     if (err) {
       return res.status(404).json({
@@ -127,7 +126,6 @@ app.get('/api/images/comprobante/:filename', (req, res) => {
       });
     }
     
-    // Servir el archivo estático
     res.sendFile(filePath);
   });
 });
@@ -151,7 +149,7 @@ app.use((req, res) => {
 // Manejo centralizado de errores
 app.use((err, req, res, next) => {
   console.error('Error:', err.message);
-  
+
   if (err instanceof multer.MulterError) {
     return res.status(413).json({
       success: false,

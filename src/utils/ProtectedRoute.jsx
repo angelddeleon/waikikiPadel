@@ -11,9 +11,9 @@ const ProtectedRoute = ({ children }) => {
     useEffect(() => {
         const checkTokenValidity = async () => {
             try {
-                const response = await fetch('https://backend.waikikipadel.com/api/usuarios/verificarToken', {
+                const response = await fetch('https://backend2node.waikikipadel.com/api/usuarios/verificarToken', {
                     method: 'GET',
-                    credentials: 'include', 
+                    credentials: 'include', // Asegura que las cookies se envíen
                     headers: {
                         'Content-Type': 'application/json'
                     }
@@ -25,7 +25,6 @@ const ProtectedRoute = ({ children }) => {
                     return;
                 }
 
-                // Si el token es válido, continúa la carga de la página
                 const data = await response.json();
                 console.log(data);
             } catch (error) {

@@ -82,11 +82,11 @@ function IniciarSesion() {
       setIsLoading(true);
 
       try {
-        const response = await fetch("https://backend.waikikipadel.com/api/usuarios/login", {
+        const response = await fetch("https://backend2node.waikikipadel.com/api/usuarios/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
-          credentials: 'include'
+          credentials: 'include' // Importante: aseguramos que las cookies se incluyan
         });
 
         const data = await response.json();
@@ -125,7 +125,7 @@ function IniciarSesion() {
             };
 
             localStorage.setItem("user", JSON.stringify(userData));
-            navigate("/principal");
+            navigate("/"); // Redirigir al principal
           }
         }
       } catch (error) {
@@ -141,7 +141,6 @@ function IniciarSesion() {
     <LayoutRegistrarse>
       <div className="min-h-screen flex flex-col justify-center items-center p-4">
         <img className="w-3xs mb-5" src={logo} alt="logo" />
-
         <form onSubmit={handleSubmit} className="flex w-80 flex-col">
           {/* Campo de Email */}
           <div>
@@ -195,8 +194,6 @@ function IniciarSesion() {
           <Link to="/registrarse" className="mb-4">
             <p className="text-blue-600 underline">¿No tienes una cuenta todavía?</p>
           </Link>
-
-
 
           {/* Botón de Iniciar Sesión */}
           <button

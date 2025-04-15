@@ -33,8 +33,8 @@ function Reservar() {
             try {
                 setLoading(true);
                 const [responseCancha, responseHorarios] = await Promise.all([
-                    fetch(`https://backend.waikikipadel.com/api/canchas/${canchaId}`),
-                    fetch(`https://backend.waikikipadel.com/api/horarios/disponibles?cancha_id=${canchaId}&fecha=${fechaSeleccionada}`)
+                    fetch(`https://backend2node.waikikipadel.com/api/canchas/${canchaId}`),
+                    fetch(`https://backend2node.waikikipadel.com/api/horarios/disponibles?cancha_id=${canchaId}&fecha=${fechaSeleccionada}`)
                 ]);
 
                 if (!responseCancha.ok || !responseHorarios.ok) {
