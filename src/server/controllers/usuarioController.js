@@ -10,7 +10,6 @@ const multer = require('multer');
 const pool = require('../config/db');
 const rateLimit = require('express-rate-limit');
 
-// Configuración de Multer (se mantiene igual)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
       const uploadPath = '../uploads/usuarios/';
@@ -29,6 +28,21 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+exports.uploadImage = (req, res) => {
+  return new Promise((resolve, reject) => {
+      upload.single('image')(req, res, (err) => {
+          if (err) {
+              console.error('Error al subir la imagen:', err);
+              return reject(new Error('Error al subir la imagen'));
+          }
+          if (!req.body) {
+              return reject(new Error('No se proporcionó ninguna imagen'));
+          }
+          resolve(req.body.image);
+      });
+  });
+};
+
 exports.crearUsuario = async (req, res) => {
   try {
     const { nombre, email, telefono, password, codigoPais, role = 'usuario' } = req.body;
@@ -36,7 +50,18 @@ exports.crearUsuario = async (req, res) => {
     if (!nombre || !email || !telefono || !password || !codigoPais) {
       return res.status(400).json({ 
         success: false,
-        error: "Todos los campos son obligatorios"
+        error: "Todos los campos son obligatorios",
+        fields: { nombre, email, telefono, password, codigoPais }
+      });
+    }
+
+    try {
+      await pool.query('SELECT 1');
+    } catch (dbError) {
+      console.error('Error de conexión a la base de datos:', dbError);
+      return res.status(500).json({ 
+        success: false,
+        error: "Error de conexión con la base de datos"
       });
     }
 
@@ -60,7 +85,6 @@ exports.crearUsuario = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-      domain: process.env.NODE_ENV === 'production' ? '.waikikipadel.com' : undefined,
       maxAge: 3600000,
       path: '/'
     });
@@ -72,10 +96,16 @@ exports.crearUsuario = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error en crearUsuario:', error);
+    console.error('Error detallado en crearUsuario:', {
+      message: error.message,
+      stack: error.stack,
+      requestBody: req.body
+    });
+    
     return res.status(500).json({
       success: false,
-      error: "Error en el servidor"
+      error: "Error en el servidor",
+      details: process.env.NODE_ENV === 'development' ? error.message : null
     });
   }
 };
@@ -98,6 +128,14 @@ exports.login = async (req, res) => {
   }
 
   try {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Formato de email inválido' 
+      });
+    }
+
     const user = await findByEmail(email);
     if (!user) {
       return res.status(401).json({ 
@@ -106,8 +144,24 @@ exports.login = async (req, res) => {
       });
     }
 
+    if (user.isBlocked) {
+      return res.status(403).json({ 
+        success: false,
+        error: 'Cuenta bloqueada. Contacte al administrador.' 
+      });
+    }
+
+    if (!user.password) {
+      console.error(`Usuario ${email} no tiene contraseña en la base de datos`);
+      return res.status(500).json({ 
+        success: false,
+        error: 'Error en el sistema. Contacte al administrador.' 
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.warn(`Intento fallido de inicio de sesión para el usuario: ${email}`);
       return res.status(401).json({ 
         success: false,
         error: 'Credenciales inválidas' 
@@ -127,8 +181,7 @@ exports.login = async (req, res) => {
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-      domain: process.env.NODE_ENV === 'production' ? '.waikikipadel.com' : undefined,
+      sameSite: 'strict',
       maxAge: 3600000,
       path: '/'
     });
@@ -145,7 +198,13 @@ exports.login = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error en el login:', error);
+    console.error('Error en el login:', {
+      message: error.message,
+      stack: error.stack,
+      email: email,
+      timestamp: new Date().toISOString()
+    });
+
     res.status(500).json({ 
       success: false,
       error: 'Error en el servidor' 
@@ -159,19 +218,12 @@ exports.logout = (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-      domain: process.env.NODE_ENV === 'production' ? '.waikikipadel.com' : undefined,
       path: '/'
     });
-    res.json({ 
-      success: true,
-      message: 'Sesión cerrada correctamente' 
-    });
+    res.json({ message: 'Sesión cerrada correctamente' });
   } catch (error) {
     console.error('Error en el logout:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Error al cerrar sesión' 
-    });
+    res.status(500).json({ error: 'Error al cerrar sesión' });
   }
 };
 
@@ -179,31 +231,37 @@ exports.verificaToken = (req, res) => {
   const token = req.cookies.token;
 
   if (!token) {
-    return res.status(401).json({ 
-      success: false,
-      error: 'No hay token. Inicia sesión' 
-    });
+    return res.status(401).json({ error: 'No hay token. Inicia sesión' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET || 'secreto', (err, decoded) => {
+  jwt.verify(token, 'secreto', (err, decoded) => {
     if (err) {
-      res.clearCookie('token', { 
-        httpOnly: true, 
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-        domain: process.env.NODE_ENV === 'production' ? '.waikikipadel.com' : undefined,
-        path: '/' 
-      });
-      return res.status(401).json({ 
-        success: false,
-        error: 'Token inválido' 
-      });
+      res.clearCookie('token', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'None', path: '/' });
+      return res.status(401).json({ error: 'Token inválido' });
     }
 
-    res.json({ 
-      success: true,
-      message: 'Token válido', 
-      user: decoded 
-    });
+    res.json({ message: 'Token válido', user: decoded });
   });
+};
+
+exports.obtenerPerfil = async (req, res) => {
+  const userIdFromToken = req.user.userId;
+
+  try {
+    const usuario = await findById(userIdFromToken);
+
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const imageUrl = usuario.profileImage 
+      ? `http://localhost:3000/uploads/usuarios/${usuario.profileImage}` 
+      : null;
+
+    const { password, ...perfil } = usuario;
+
+    res.json({ ...perfil, imageUrl });
+  } catch (error) {
+    res.status(500).json({ error: 'Hubo un error al obtener el perfil del usuario' });
+  }
 };
