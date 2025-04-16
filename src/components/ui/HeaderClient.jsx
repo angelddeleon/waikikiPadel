@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import logo from "../../../public/Logo-Waikiki-BLANCO.png";
-import { ArrowRightOnRectangleIcon, UserPlusIcon, ArrowLeftOnRectangleIcon } from '@heroicons/react/24/outline';
+import { ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router';
 
 const HeaderClient = () => {
@@ -14,10 +14,19 @@ const HeaderClient = () => {
             try {
                 const response = await fetch('https://backend2node.waikikipadel.com/api/usuarios/verificarToken', {
                     method: 'GET',
-                    credentials: 'include', 
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 });
 
-                setIsAuthenticated(response.ok);
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    setIsAuthenticated(true);
+                } else {
+                    setIsAuthenticated(false);
+                }
             } catch (error) {
                 console.error('Error al verificar el token:', error);
                 setIsAuthenticated(false);
@@ -33,9 +42,13 @@ const HeaderClient = () => {
             const response = await fetch('https://backend2node.waikikipadel.com/api/usuarios/logout', {
                 method: 'POST',
                 credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             });
 
             if (response.ok) {
+                setIsAuthenticated(false);
                 navigate('/iniciarsesion');
             }
         } catch (error) {
